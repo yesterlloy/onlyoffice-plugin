@@ -1,0 +1,38 @@
+.doc-editor {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+  min-height: 100%;
+}
+
+.doc-paper {
+  width: 720px;
+  min-height: 900px;
+  background: #fff;
+  border-radius: 2px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08);
+  padding: 48px 56px;
+}
+
+.doc-block {
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  transition: all 0.15s;
+  margin-bottom: 4px;
+}
+
+.doc-block-over {
+  border-color: #1890ff;
+  background: #e6f7ff;
+}
+
+.doc-block-empty {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  margin-top: 16px;
+}

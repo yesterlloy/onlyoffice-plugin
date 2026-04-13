@@ -1,0 +1,16 @@
+.idea/
+**/target/
+*.class
+**/.DS_Store
+
+*.jar
+*.iml
+.svn/
+.classpath
+.project
+.settings/
+*.log
+*.gz
+*.tgz
+.superpowers
+.claude

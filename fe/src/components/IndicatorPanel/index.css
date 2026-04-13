@@ -1,0 +1,142 @@
+.indicator-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.indicator-panel-header {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.indicator-panel-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f1f1f;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.indicator-search {
+  border-radius: 6px;
+}
+
+.indicator-panel-content {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 0;
+}
+
+.indicator-panel-footer {
+  padding: 10px 12px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.indicator-tip {
+  font-size: 11px;
+  color: #8c8c8c;
+  line-height: 1.6;
+}
+
+.indicator-tree {
+  background: transparent;
+}
+
+.indicator-tree .ant-tree-treenode {
+  padding: 0;
+  width: 100%;
+}
+
+.indicator-tree .ant-tree-node-content-wrapper {
+  flex: 1;
+  padding: 0;
+}
+
+.indicator-tree .ant-tree-switcher {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.category-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #1f1f1f;
+}
+
+.indicator-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 8px 28px;
+  cursor: grab;
+  transition: background 0.2s;
+  border-left: 3px solid transparent;
+}
+
+.indicator-item:hover {
+  background: #f5f5f5;
+  border-left-color: #1890ff;
+}
+
+.indicator-item.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.indicator-item-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.indicator-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.indicator-item-content .ant-typography {
+  display: block;
+}
+
+.indicator-item-meta {
+  font-size: 11px;
+  display: block;
+  margin-top: 2px;
+}
+
+.indicator-item-tag {
+  font-size: 10px;
+  padding: 0 6px;
+  line-height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.indicator-item-drag {
+  color: #d9d9d9;
+  font-size: 14px;
+  cursor: grab;
+}
+
+.indicator-item-insert {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.indicator-item:hover .indicator-item-insert {
+  opacity: 1;
+}
+
+.indicator-item-insert:hover {
+  transform: scale(1.1);
+}

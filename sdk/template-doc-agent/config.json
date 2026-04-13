@@ -1,0 +1,23 @@
+{
+  "name": "Template Document Agent",
+  "guid": "asc.{ guid }",
+  "baseUrl": "",
+  "variations": [
+    {
+      "description": "Template Document Agent - Content Control operations for template editor",
+      "url": "index.html",
+      "icons": ["resources/icon.png"],
+      "icons2": [
+        {
+          "style": "light",
+          "100%": { "normal": "resources/icon.png" }
+        }
+      ],
+      "isViewer": false,
+      "EditorsSupport": ["word"],
+      "isVisual": false,
+      "initDataType": "none",
+      "initOnSelectionChanged": false
+    }
+  ]
+}
