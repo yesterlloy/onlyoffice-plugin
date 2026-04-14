@@ -4,7 +4,7 @@
  * 职责：文档操作代理，无 UI，仅通过消息与产品前端通信
  */
 
-(function(window, undefined) {
+(function(window) {
   // 调试日志配置
   const LOG_PREFIX = '[Plugin]';
   const LOG_ENABLED = true;
@@ -29,36 +29,32 @@
 
   log('📦 Script loading, window.Asc status:', window.Asc ? 'available' : 'not available');
 
-
   // 直接定义插件函数（OnlyOffice SDK 会调用它们）
-  // 需要先确保 window.Asc 对象存在
   window.Asc = window.Asc || {};
   window.Asc.plugin = window.Asc.plugin || {};
 
+  log('Asc:', window.Asc);
+  log('Asc.plugin:', window.Asc?.plugin);
+  log('onExternalMessage:', window.Asc?.plugin?.onExternalMessage);
 
-  log('Asc:', window.Asc)                                                                                                                                     
-  log('Asc.plugin:', window.Asc?.plugin)                                                                                                                      
-  log('onExternalMessage:', window.Asc?.plugin?.onExternalMessage)
+  // ========== 通信状态追踪 ==========
 
-  // 插件初始化
-  window.Asc.plugin.init = function() {
-    log('🚀 Plugin initialized');
-    log('📦 Available modules:', {
-      ContentControl: Object.keys(ContentControl),
-      Converter: Object.keys(Converter)
-    });
+  // 记录消息来源，以便通过相同方式回复
+  let lastMessageSource = null;  // 'broadcast' | 'postMessage' | 'sdk'
+  let lastMessageEvent = null;   // 用于 postMessage 回复时获取 source
 
-    // 通知前端插件已就绪
-    reply('editorReady', { initialized: true, timestamp: Date.now() });
-    logSuccess('Editor ready notification sent');
-  };
+  // ========== 消息处理核心 ==========
 
-  // 外部消息处理
-  window.Asc.plugin.onExternalMessage = function(msg) {
+  function processMessage(msg, sourceType, event) {
     log('📨 ========== MESSAGE RECEIVED ==========');
+    log('📨 Source:', sourceType);
     log('📨 Type:', msg.type);
     log('📨 Data:', JSON.stringify(msg.data, null, 2));
     log('📨 Timestamp:', new Date().toISOString());
+
+    // 记录来源，用于回复
+    lastMessageSource = sourceType;
+    lastMessageEvent = event;
 
     const data = msg.data || {};
     const startTime = Date.now();
@@ -97,6 +93,75 @@
       default:
         logError('Unknown message type:', msg.type);
     }
+  }
+
+  // ========== 通信方式初始化 ==========
+
+  // 方式1: BroadcastChannel（同源场景）
+  let broadcastChannel = null;
+  try {
+    broadcastChannel = new BroadcastChannel('onlyoffice-plugin-channel');
+    broadcastChannel.onmessage = function(event) {
+      log('📡 BroadcastChannel received:', event.data);
+      processMessage(event.data, 'broadcast', event);
+    };
+    log('✅ BroadcastChannel initialized (same-origin communication)');
+  } catch (e) {
+    log('⚠️ BroadcastChannel not available:', e.message);
+  }
+
+  // 方式2: postMessage（跨域场景，监听来自 parent 的消息）
+  window.addEventListener('message', function(event) {
+    log('📬 postMessage received from:', event);
+
+    // 忽略来自自身的消息
+    if (event.source === window) {
+      return;
+    }
+
+    // 解析消息 - 支持多种格式
+    let msg = event.data;
+    if (!msg || typeof msg !== 'object') {
+      return;
+    }
+
+    // 格式1: 直接格式 { type: 'insertIndicator', data: {...} }
+    if (msg.type && !msg.data?.type) {
+      processMessage(msg, 'postMessage', event);
+      return;
+    }
+
+    // 格式2: OnlyOffice SDK 包装格式 { type: 'onExternalPluginMessage', data: { type: '...', data: {...} } }
+    if (msg.type === 'onExternalPluginMessage' && msg.data) {
+      processMessage(msg.data, 'postMessage', event);
+      return;
+    }
+  });
+
+  log('📦 postMessage listener registered (cross-origin communication)');
+
+  // 方式3: OnlyOffice SDK onExternalMessage - serviceSendMessage 会触发这个
+  window.Asc.plugin.onExternalMessage = function(msg) {
+    log('📨 ========== EXTERNAL MESSAGE (serviceSendMessage) ==========');
+    log('📨 Source: serviceSendMessage');
+    log('📨 Message:', JSON.stringify(msg, null, 2));
+    log('📨 Timestamp:', new Date().toISOString());
+
+    // serviceSendMessage 发送的消息格式: { type, data }
+    processMessage(msg, 'serviceSendMessage', null);
+  };
+
+  // 插件初始化
+  window.Asc.plugin.init = function() {
+    log('🚀 Plugin initialized');
+    log('📦 Available modules:', {
+      ContentControl: Object.keys(ContentControl),
+      Converter: Object.keys(Converter)
+    });
+
+    // 通知前端插件已就绪 - 尝试多种方式
+    reply('editorReady', { initialized: true, timestamp: Date.now() });
+    logSuccess('Editor ready notification sent');
   };
 
   log('📦 Plugin handlers defined');
@@ -252,48 +317,75 @@
     }
   }
 
-  // ========== 辅助函数 ==========
+  // ========== 回复函数 - 根据来源选择方式 ==========
 
   function reply(type, data) {
     log('📤 ========== SENDING RESPONSE ==========');
     log('📤 Type:', type);
+    log('📤 Last source:', lastMessageSource);
     log('📤 Data:', JSON.stringify(data, null, 2));
 
     const message = { type: type, data: data };
 
-    // 尝试多种方式发送消息
-    // 1. 使用 OnlyOffice SDK 的 sendToPlugin（如果可用）
-    if (window.Asc && window.Asc.plugin && window.Asc.plugin.sendToPlugin) {
-      try {
-        window.Asc.plugin.sendToPlugin('onMessage', message);
-        log('📤 Response sent via sendToPlugin');
-      } catch (e) {
-        log('⚠️ sendToPlugin failed:', e.message);
-        sendViaPostMessage(message);
+    // 根据消息来源选择回复方式
+    if (lastMessageSource === 'broadcast') {
+      // 同源：通过 BroadcastChannel 回复
+      if (broadcastChannel) {
+        try {
+          broadcastChannel.postMessage(message);
+          log('📤 Response sent via BroadcastChannel');
+          return;
+        } catch (e) {
+          log('⚠️ BroadcastChannel failed:', e.message);
+        }
       }
-    } else {
-      sendViaPostMessage(message);
+    } else if (lastMessageSource === 'postMessage' && lastMessageEvent) {
+      // postMessage：通过 postMessage 回复到消息来源
+      try {
+        lastMessageEvent.source.postMessage(message, '*');
+        log('📤 Response sent via postMessage to source');
+        return;
+      } catch (e) {
+        log('⚠️ postMessage to source failed:', e.message);
+      }
+    } else if (lastMessageSource === 'serviceSendMessage') {
+      // serviceSendMessage：使用 BroadcastChannel 或 postMessage 回复
+      // 因为 serviceSendMessage 是单向的，插件需要通过其他方式回复
+      log('📤 serviceSendMessage source, using fallback');
+      sendFallback(message);
+      return;
     }
+
+    // 兜底：尝试所有方式
+    log('📤 Using fallback methods...');
+    sendFallback(message);
   }
 
-  function sendViaPostMessage(message) {
-    log('📤 Using postMessage to send response');
+  function sendFallback(message) {
+    // 尝试 BroadcastChannel
+    if (broadcastChannel) {
+      try {
+        broadcastChannel.postMessage(message);
+        log('📤 Fallback: sent via BroadcastChannel');
+      } catch (e) {
+        log('⚠️ Fallback BroadcastChannel failed:', e.message);
+      }
+    }
 
-    // 尝试发送到顶层窗口（前端）
+    // 尝试 postMessage 到顶层和父窗口
     try {
       if (window.top && window.top !== window) {
-        log('📤 Sending to window.top');
         window.top.postMessage(message, '*');
+        log('📤 Fallback: sent to window.top');
       }
     } catch (e) {
       log('⚠️ window.top failed:', e.message);
     }
 
-    // 也尝试发送到父窗口
     try {
       if (window.parent && window.parent !== window) {
-        log('📤 Sending to window.parent');
         window.parent.postMessage(message, '*');
+        log('📤 Fallback: sent to window.parent');
       }
     } catch (e) {
       log('⚠️ window.parent failed:', e.message);
@@ -309,9 +401,16 @@
     handleConvertToRaw,
     handleConvertToVisual,
     log,
-    reply
+    reply,
+    // 测试方法
+    testBroadcast: function() {
+      if (broadcastChannel) {
+        broadcastChannel.postMessage({ type: 'test', data: { from: 'plugin' } });
+        log('📤 Test broadcast sent');
+      }
+    }
   };
 
   log('📦 Plugin module loaded');
 
-})(window, undefined);
+})(window);

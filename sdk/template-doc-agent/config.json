@@ -2,6 +2,7 @@
   "name": "Template Document Agent",
   "guid": "asc.template-doc-agent",
   "baseUrl": "",
+  "isSystem": true,
   "variations": [
     {
       "description": "Template Document Agent - Content Control operations for template editor",

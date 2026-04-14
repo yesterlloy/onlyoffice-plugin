@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { message } from 'antd'
 import { DocumentEditor } from '@onlyoffice/document-editor-react'
 import config, { getCallbackUrl } from '@/config'
@@ -12,6 +12,13 @@ interface OnlyOfficeEditorProps {
   onError?: (error: Error) => void
 }
 
+// 全局保存 DocEditor 实例
+declare global {
+  interface Window {
+    docEditor?: any
+  }
+}
+
 /**
  * OnlyOffice 编辑器组件
  * 使用 @onlyoffice/document-editor-react 官方组件
@@ -22,14 +29,29 @@ const OnlyOfficeEditor = ({
   documentTitle,
   onError,
 }: OnlyOfficeEditorProps) => {
+  const editorRef = useRef<any>(null)
 
   // 文档就绪事件
   const onDocumentReady = () => {
     console.log('[OnlyOfficeEditor] Document ready event received')
-    // 初始化桥接（异步查找 iframe）
-    // editorReady 状态由 bridgeReady 事件触发设置
+
+    // 获取 DocEditor 实例 - 通过 DocsAPI.instances
+    try {
+      const instances = (window as any).DocsAPI?.DocEditor?.instances
+      if (instances) {
+        const keys = Object.keys(instances)
+        if (keys.length > 0) {
+          editorRef.current = instances[keys[0]]
+          window.docEditor = editorRef.current
+          console.log('[OnlyOfficeEditor] ✅ DocEditor instance saved:', editorRef.current)
+        }
+      }
+    } catch (e) {
+      console.warn('[OnlyOfficeEditor] Could not get DocEditor instance:', e)
+    }
+
+    // 初始化桥接 - postMessage 到 iframe
     onlyOfficeBridge.init('onlyoffice-editor-wrapper')
-    // 不在这里调用 onReady，等待 bridgeReady 事件
   }
 
   // 信息事件
