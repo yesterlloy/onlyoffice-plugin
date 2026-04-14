@@ -13,13 +13,17 @@ interface AppConfig {
   isDev: boolean
   /** 是否使用 Mock 数据（前端联调模式） */
   useMock: boolean
+  token?: string // 可选的认证 token
 }
+
+let ip = '192.168.1.3'
 
 // 开发环境配置
 const devConfig: AppConfig = {
-  documentServerUrl: 'http://192.168.0.203:8888',
-  apiBaseUrl: 'http://192.168.0.203:8888/example/api',
+  documentServerUrl: `http://${ip}:8888`,
+  apiBaseUrl: `http://${ip}:8888/example/api`,
   pluginUrl: '/sdkjs-plugins/template-doc-agent/config.json',
+  token: 'jwtonlyoffice',
   isDev: true,
   useMock: true, // 开发模式默认使用 Mock 数据
 }
@@ -29,6 +33,7 @@ const prodConfig: AppConfig = {
   documentServerUrl: 'https://doc.your-domain.com',
   apiBaseUrl: 'https://api.your-domain.com/template-editor',
   pluginUrl: 'https://cdn.your-domain.com/plugins/template-doc-agent/config.json',
+  token: 'jwtonlyoffice',
   isDev: false,
   useMock: false,
 }

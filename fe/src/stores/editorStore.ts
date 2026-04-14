@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { IndicatorCategory, IndicatorDetail, DocBlock, DocTagItem } from '@/types'
 import { useMock } from '@/config'
+import config from '@/config'
 
 // 编辑器模式
 export type EditorMode = 'mock' | 'onlyoffice'
@@ -82,9 +83,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   configPanelVisible: false,
   currentEditingTag: null,
   currentTemplateId: null,
-  documentUrl: 'http://192.168.0.203:8888',
-  documentKey: 'doc_123456',
-  documentTitle: '我的文档.docx',
+  documentUrl: config.documentServerUrl,
+  documentKey: 'doc123456',
+  documentTitle: 'new.docx',
 
   // Actions
   setCategories: (categories) => set({ categories }),

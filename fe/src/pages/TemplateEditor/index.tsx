@@ -382,10 +382,7 @@ const TemplateEditorPage = () => {
 
           {/* 中间文档编辑区 */}
           <Content className="editor-content">
-            {editorMode !== 'mock' ? (
-              <DocEditor />
-            ) : (
-              documentUrl ? (
+            {documentUrl ? (
                 <OnlyOfficeEditor
                   documentUrl={documentUrl}
                   documentKey={documentKey!}
@@ -399,7 +396,6 @@ const TemplateEditorPage = () => {
                     加载模板
                   </Button>
                 </div>
-              )
             )}
           </Content>
 

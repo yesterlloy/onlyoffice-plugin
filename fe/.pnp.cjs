@@ -32,6 +32,7 @@ const RAW_RUNTIME_STATE =
           ["@dnd-kit/core", "virtual:24c6a78a6f7ee65e1dcd326230ce6fe8baae226e38d397b4c07ff1ddb08ba7328e266b94396c96fa3d490ea354d9cfe317923b3ab744a294b7e87e3d113e563b#npm:6.3.1"],\
           ["@dnd-kit/sortable", "virtual:24c6a78a6f7ee65e1dcd326230ce6fe8baae226e38d397b4c07ff1ddb08ba7328e266b94396c96fa3d490ea354d9cfe317923b3ab744a294b7e87e3d113e563b#npm:8.0.0"],\
           ["@dnd-kit/utilities", "virtual:24c6a78a6f7ee65e1dcd326230ce6fe8baae226e38d397b4c07ff1ddb08ba7328e266b94396c96fa3d490ea354d9cfe317923b3ab744a294b7e87e3d113e563b#npm:3.2.2"],\
+          ["@onlyoffice/document-editor-react", "virtual:24c6a78a6f7ee65e1dcd326230ce6fe8baae226e38d397b4c07ff1ddb08ba7328e266b94396c96fa3d490ea354d9cfe317923b3ab744a294b7e87e3d113e563b#npm:2.1.1"],\
           ["@types/lodash-es", "npm:4.17.12"],\
           ["@types/react", "npm:18.3.28"],\
           ["@types/react-dom", "virtual:24c6a78a6f7ee65e1dcd326230ce6fe8baae226e38d397b4c07ff1ddb08ba7328e266b94396c96fa3d490ea354d9cfe317923b3ab744a294b7e87e3d113e563b#npm:18.3.7"],\
@@ -1022,6 +1023,33 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "../../../../.yarn/berry/cache/@npmcli-redact-npm-4.0.0-b3e2eeb8d8-10c0.zip/node_modules/@npmcli/redact/",\
         "packageDependencies": [\
           ["@npmcli/redact", "npm:4.0.0"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@onlyoffice/document-editor-react", [\
+      ["npm:2.1.1", {\
+        "packageLocation": "../../../../.yarn/berry/cache/@onlyoffice-document-editor-react-npm-2.1.1-a52a9c6ad6-10c0.zip/node_modules/@onlyoffice/document-editor-react/",\
+        "packageDependencies": [\
+          ["@onlyoffice/document-editor-react", "npm:2.1.1"]\
+        ],\
+        "linkType": "SOFT"\
+      }],\
+      ["virtual:24c6a78a6f7ee65e1dcd326230ce6fe8baae226e38d397b4c07ff1ddb08ba7328e266b94396c96fa3d490ea354d9cfe317923b3ab744a294b7e87e3d113e563b#npm:2.1.1", {\
+        "packageLocation": "./.yarn/__virtual__/@onlyoffice-document-editor-react-virtual-86e229e01e/5/.yarn/berry/cache/@onlyoffice-document-editor-react-npm-2.1.1-a52a9c6ad6-10c0.zip/node_modules/@onlyoffice/document-editor-react/",\
+        "packageDependencies": [\
+          ["@onlyoffice/document-editor-react", "virtual:24c6a78a6f7ee65e1dcd326230ce6fe8baae226e38d397b4c07ff1ddb08ba7328e266b94396c96fa3d490ea354d9cfe317923b3ab744a294b7e87e3d113e563b#npm:2.1.1"],\
+          ["@types/react", "npm:18.3.28"],\
+          ["@types/react-dom", "virtual:24c6a78a6f7ee65e1dcd326230ce6fe8baae226e38d397b4c07ff1ddb08ba7328e266b94396c96fa3d490ea354d9cfe317923b3ab744a294b7e87e3d113e563b#npm:18.3.7"],\
+          ["lodash", "npm:4.17.21"],\
+          ["react", "npm:18.3.1"],\
+          ["react-dom", "virtual:24c6a78a6f7ee65e1dcd326230ce6fe8baae226e38d397b4c07ff1ddb08ba7328e266b94396c96fa3d490ea354d9cfe317923b3ab744a294b7e87e3d113e563b#npm:18.3.1"]\
+        ],\
+        "packagePeers": [\
+          "@types/react-dom",\
+          "@types/react",\
+          "react-dom",\
+          "react"\
         ],\
         "linkType": "HARD"\
       }]\
@@ -3371,6 +3399,15 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["lodash", [\
+      ["npm:4.17.21", {\
+        "packageLocation": "../../../../.yarn/berry/cache/lodash-npm-4.17.21-6382451519-10c0.zip/node_modules/lodash/",\
+        "packageDependencies": [\
+          ["lodash", "npm:4.17.21"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["lodash-es", [\
       ["npm:4.18.1", {\
         "packageLocation": "../../../../.yarn/berry/cache/lodash-es-npm-4.18.1-02cf41b912-10c0.zip/node_modules/lodash-es/",\
@@ -5367,6 +5404,7 @@ const RAW_RUNTIME_STATE =
           ["@dnd-kit/core", "virtual:24c6a78a6f7ee65e1dcd326230ce6fe8baae226e38d397b4c07ff1ddb08ba7328e266b94396c96fa3d490ea354d9cfe317923b3ab744a294b7e87e3d113e563b#npm:6.3.1"],\
           ["@dnd-kit/sortable", "virtual:24c6a78a6f7ee65e1dcd326230ce6fe8baae226e38d397b4c07ff1ddb08ba7328e266b94396c96fa3d490ea354d9cfe317923b3ab744a294b7e87e3d113e563b#npm:8.0.0"],\
           ["@dnd-kit/utilities", "virtual:24c6a78a6f7ee65e1dcd326230ce6fe8baae226e38d397b4c07ff1ddb08ba7328e266b94396c96fa3d490ea354d9cfe317923b3ab744a294b7e87e3d113e563b#npm:3.2.2"],\
+          ["@onlyoffice/document-editor-react", "virtual:24c6a78a6f7ee65e1dcd326230ce6fe8baae226e38d397b4c07ff1ddb08ba7328e266b94396c96fa3d490ea354d9cfe317923b3ab744a294b7e87e3d113e563b#npm:2.1.1"],\
           ["@types/lodash-es", "npm:4.17.12"],\
           ["@types/react", "npm:18.3.28"],\
           ["@types/react-dom", "virtual:24c6a78a6f7ee65e1dcd326230ce6fe8baae226e38d397b4c07ff1ddb08ba7328e266b94396c96fa3d490ea354d9cfe317923b3ab744a294b7e87e3d113e563b#npm:18.3.7"],\
