@@ -9,7 +9,6 @@ interface OnlyOfficeEditorProps {
   documentUrl: string
   documentKey: string
   documentTitle: string
-  onReady?: () => void
   onError?: (error: Error) => void
 }
 
@@ -21,16 +20,16 @@ const OnlyOfficeEditor = ({
   documentUrl,
   documentKey,
   documentTitle,
-  onReady,
   onError,
 }: OnlyOfficeEditorProps) => {
 
   // 文档就绪事件
   const onDocumentReady = () => {
     console.log('[OnlyOfficeEditor] Document ready event received')
-    // 初始化桥接
-    onlyOfficeBridge.init('onlyoffice-editor-container')
-    onReady?.()
+    // 初始化桥接（异步查找 iframe）
+    // editorReady 状态由 bridgeReady 事件触发设置
+    onlyOfficeBridge.init('onlyoffice-editor-wrapper')
+    // 不在这里调用 onReady，等待 bridgeReady 事件
   }
 
   // 信息事件
@@ -107,15 +106,15 @@ const OnlyOfficeEditor = ({
         edit: true,
         download: true,
         print: true,
+        save: true,
       },
     },
     documentType: 'word',
-    token: config.token,
     editorConfig: {
       mode: 'edit',
       lang: 'zh-CN',
       user: {
-        id: 'user_001',
+        id: 'uid-1',
         name: '模板编辑员',
       },
       plugins: {
@@ -142,12 +141,11 @@ const OnlyOfficeEditor = ({
   console.log('editorConfig=', editorConfig)
 
   return (
-    <div className="onlyoffice-editor-wrapper">
+    <div className="onlyoffice-editor-wrapper" id="onlyoffice-editor-wrapper" >
       <DocumentEditor
         id="onlyoffice-editor-container"
         documentServerUrl={config.documentServerUrl}
         config={editorConfig}
-        token={config.token}
         onLoadComponentError={onLoadComponentError}
       />
     </div>

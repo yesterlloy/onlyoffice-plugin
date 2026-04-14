@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Drawer, Tabs, Form, Input, Select, InputNumber, Switch, Button, ColorPicker, message, Spin, Divider } from 'antd'
-import { SaveOutlined, ReloadOutlined, RobotOutlined } from '@ant-design/icons'
+import { Drawer, Tabs, Form, Input, Select, InputNumber, Switch, Button, message, Divider } from 'antd'
+import { SaveOutlined, RobotOutlined } from '@ant-design/icons'
 import { useEditorStore } from '@/stores'
 import { aiPreview } from '@/api'
 import type { IndicatorDetail, IndicatorParam, AiPreviewResult } from '@/types'
@@ -22,7 +22,7 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
     configPanelVisible,
     setConfigPanelVisible,
     indicatorMap,
-    updateTagParams,
+    updateIndicatorParams,
   } = useEditorStore()
 
   const [form] = Form.useForm()
@@ -55,14 +55,17 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
   }
 
   // 保存参数
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!currentEditingTag) return
 
-    form.validateFields().then((values) => {
-      updateTagParams(currentEditingTag.uid, values)
+    try {
+      const values = await form.validateFields()
+      await updateIndicatorParams(currentEditingTag.uid, values)
       message.success('配置已保存')
       handleClose()
-    })
+    } catch (error) {
+      message.error('保存失败')
+    }
   }
 
   // AI 预览生成
@@ -99,7 +102,6 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
   }
 
   const isAi = currentEditingTag.type === 'ai_generate'
-  const isChart = currentEditingTag.type === 'chart'
 
   // 渲染参数控件
   const renderParamControl = (param: IndicatorParam) => {

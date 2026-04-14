@@ -2,10 +2,6 @@
  * Template Document Agent - OnlyOffice Plugin
  *
  * 职责：文档操作代理，无 UI，仅通过消息与产品前端通信
- *
- * 消息协议：
- * - 接收：insertIndicator, removeIndicator, updateParams, getDocTags, convertToRaw, convertToVisual
- * - 发送：tagClicked, convertDone, allTags, insertDone, updateDone, removeDone
  */
 
 (function(window, undefined) {
@@ -30,6 +26,19 @@
   // 导入模块
   const ContentControl = window.ContentControlModule || {};
   const Converter = window.ConverterModule || {};
+
+  log('📦 Script loading, window.Asc status:', window.Asc ? 'available' : 'not available');
+
+
+  // 直接定义插件函数（OnlyOffice SDK 会调用它们）
+  // 需要先确保 window.Asc 对象存在
+  window.Asc = window.Asc || {};
+  window.Asc.plugin = window.Asc.plugin || {};
+
+
+  log('Asc:', window.Asc)                                                                                                                                     
+  log('Asc.plugin:', window.Asc?.plugin)                                                                                                                      
+  log('onExternalMessage:', window.Asc?.plugin?.onExternalMessage)
 
   // 插件初始化
   window.Asc.plugin.init = function() {
@@ -90,36 +99,22 @@
     }
   };
 
+  log('📦 Plugin handlers defined');
+
   // ========== 消息处理函数 ==========
 
-  /**
-   * 插入指标标签
-   * @param {Object} data - { uid, indicatorId, code, field, name, type, chartType, paramValues }
-   * @param {Number} startTime - 开始时间
-   */
   function handleInsertIndicator(data, startTime) {
     log('📝 Inserting indicator...');
-    log('📝 Input data:', {
-      uid: data.uid,
-      indicatorId: data.indicatorId,
-      code: data.code,
-      field: data.field,
-      name: data.name,
-      type: data.type,
-      chartType: data.chartType,
-      paramValues: JSON.stringify(data.paramValues)
-    });
+    log('📝 Input data:', JSON.stringify(data, null, 2));
 
     try {
       const tag = ContentControl.insert(data);
       const elapsed = Date.now() - startTime;
 
-      logSuccess('Insert complete', { uid: tag.uid, elapsed: elapsed + 'ms' });
-      log('📤 Sending insertDone response');
-
+      logSuccess('Insert complete', { uid: tag ? tag.uid : data.uid, elapsed: elapsed + 'ms' });
       reply('insertDone', {
         uid: data.uid,
-        tagUid: tag.uid,
+        tagUid: tag ? tag.uid : data.uid,
         elapsed: elapsed,
         timestamp: Date.now()
       });
@@ -134,11 +129,6 @@
     }
   }
 
-  /**
-   * 移除指标标签
-   * @param {Object} data - { uid }
-   * @param {Number} startTime - 开始时间
-   */
   function handleRemoveIndicator(data, startTime) {
     log('🗑️ Removing indicator:', data.uid);
 
@@ -147,8 +137,6 @@
       const elapsed = Date.now() - startTime;
 
       logSuccess('Remove complete', { uid: data.uid, elapsed: elapsed + 'ms' });
-      log('📤 Sending removeDone response');
-
       reply('removeDone', {
         uid: data.uid,
         elapsed: elapsed,
@@ -165,11 +153,6 @@
     }
   }
 
-  /**
-   * 更新参数
-   * @param {Object} data - { uid, paramValues }
-   * @param {Number} startTime - 开始时间
-   */
   function handleUpdateParams(data, startTime) {
     log('⚙️ Updating params...');
     log('⚙️ uid:', data.uid);
@@ -180,8 +163,6 @@
       const elapsed = Date.now() - startTime;
 
       logSuccess('Update complete', { uid: data.uid, elapsed: elapsed + 'ms' });
-      log('📤 Sending updateDone response');
-
       reply('updateDone', {
         uid: data.uid,
         elapsed: elapsed,
@@ -198,10 +179,6 @@
     }
   }
 
-  /**
-   * 获取文档中所有标签
-   * @param {Number} startTime - 开始时间
-   */
   function handleGetDocTags(startTime) {
     log('📋 Getting all doc tags...');
 
@@ -209,13 +186,10 @@
       const tags = ContentControl.getAllTags();
       const elapsed = Date.now() - startTime;
 
-      logSuccess('GetDocTags complete', { count: tags.length, elapsed: elapsed + 'ms' });
-      log('📋 Tags found:', JSON.stringify(tags, null, 2));
-      log('📤 Sending allTags response');
-
+      logSuccess('GetDocTags complete', { count: tags ? tags.length : 0, elapsed: elapsed + 'ms' });
       reply('allTags', {
-        tags: tags,
-        count: tags.length,
+        tags: tags || [],
+        count: tags ? tags.length : 0,
         elapsed: elapsed,
         timestamp: Date.now()
       });
@@ -229,24 +203,14 @@
     }
   }
 
-  /**
-   * 可视化 → 原始转换
-   * @param {Number} startTime - 开始时间
-   */
   function handleConvertToRaw(startTime) {
     log('🔄 Converting to raw template...');
 
     try {
-      const rawContent = Converter.visualToRaw();
+      const rawContent = Converter.visualToRaw ? Converter.visualToRaw() : '';
       const elapsed = Date.now() - startTime;
 
-      logSuccess('ConvertToRaw complete', {
-        contentLength: rawContent ? rawContent.length : 0,
-        elapsed: elapsed + 'ms'
-      });
-      log('📄 Raw content preview:', rawContent ? rawContent.substring(0, 500) + '...' : '(empty)');
-      log('📤 Sending convertDone response');
-
+      logSuccess('ConvertToRaw complete', { elapsed: elapsed + 'ms' });
       reply('convertDone', {
         content: rawContent,
         direction: 'toRaw',
@@ -263,22 +227,16 @@
     }
   }
 
-  /**
-   * 原始 → 可视化转换
-   * @param {Object} data - { indicatorMap }
-   * @param {Number} startTime - 开始时间
-   */
   function handleConvertToVisual(data, startTime) {
     log('🔄 Converting to visual...');
-    log('🔄 indicatorMap:', JSON.stringify(data.indicatorMap, null, 2));
 
     try {
-      Converter.rawToVisual(data.indicatorMap || {});
+      if (Converter.rawToVisual) {
+        Converter.rawToVisual(data.indicatorMap || {});
+      }
       const elapsed = Date.now() - startTime;
 
       logSuccess('ConvertToVisual complete', { elapsed: elapsed + 'ms' });
-      log('📤 Sending convertDone response');
-
       reply('convertDone', {
         direction: 'toVisual',
         elapsed: elapsed,
@@ -296,48 +254,64 @@
 
   // ========== 辅助函数 ==========
 
-  /**
-   * 发送消息给产品前端
-   * @param {string} type - 消息类型
-   * @param {Object} data - 消息数据
-   */
   function reply(type, data) {
     log('📤 ========== SENDING RESPONSE ==========');
     log('📤 Type:', type);
     log('📤 Data:', JSON.stringify(data, null, 2));
 
-    const message = {
-      type: type,
-      data: data
-    };
+    const message = { type: type, data: data };
 
-    log('📤 Full message:', JSON.stringify(message).length, 'bytes');
-
-    window.Asc.plugin.sendToPlugin('onMessage', message);
-
-    log('📤 Response sent via sendToPlugin');
+    // 尝试多种方式发送消息
+    // 1. 使用 OnlyOffice SDK 的 sendToPlugin（如果可用）
+    if (window.Asc && window.Asc.plugin && window.Asc.plugin.sendToPlugin) {
+      try {
+        window.Asc.plugin.sendToPlugin('onMessage', message);
+        log('📤 Response sent via sendToPlugin');
+      } catch (e) {
+        log('⚠️ sendToPlugin failed:', e.message);
+        sendViaPostMessage(message);
+      }
+    } else {
+      sendViaPostMessage(message);
+    }
   }
 
-  /**
-   * 生成唯一 ID
-   */
-  function generateUid() {
-    return 'tag_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  function sendViaPostMessage(message) {
+    log('📤 Using postMessage to send response');
+
+    // 尝试发送到顶层窗口（前端）
+    try {
+      if (window.top && window.top !== window) {
+        log('📤 Sending to window.top');
+        window.top.postMessage(message, '*');
+      }
+    } catch (e) {
+      log('⚠️ window.top failed:', e.message);
+    }
+
+    // 也尝试发送到父窗口
+    try {
+      if (window.parent && window.parent !== window) {
+        log('📤 Sending to window.parent');
+        window.parent.postMessage(message, '*');
+      }
+    } catch (e) {
+      log('⚠️ window.parent failed:', e.message);
+    }
   }
 
-  // 暴露给测试
+  // 暴露给调试
   window.TemplateDocAgent = {
-    handleInsertIndicator: handleInsertIndicator,
-    handleRemoveIndicator: handleRemoveIndicator,
-    handleUpdateParams: handleUpdateParams,
-    handleGetDocTags: handleGetDocTags,
-    handleConvertToRaw: handleConvertToRaw,
-    handleConvertToVisual: handleConvertToVisual,
-    // 调试方法
-    log: log,
-    reply: reply
+    handleInsertIndicator,
+    handleRemoveIndicator,
+    handleUpdateParams,
+    handleGetDocTags,
+    handleConvertToRaw,
+    handleConvertToVisual,
+    log,
+    reply
   };
 
-  log('📦 Plugin module loaded and ready');
+  log('📦 Plugin module loaded');
 
 })(window, undefined);

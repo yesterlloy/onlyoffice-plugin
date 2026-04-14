@@ -16,14 +16,14 @@ interface AppConfig {
   token?: string // 可选的认证 token
 }
 
-let ip = '192.168.1.3'
+let ip = '192.168.0.121'
 
 // 开发环境配置
 const devConfig: AppConfig = {
-  documentServerUrl: `http://${ip}:8888`,
-  apiBaseUrl: `http://${ip}:8888/example/api`,
-  pluginUrl: '/sdkjs-plugins/template-doc-agent/config.json',
-  token: 'jwtonlyoffice',
+  documentServerUrl: `http://${ip}:8888/`,
+  apiBaseUrl: `http://${ip}:8888/example`,
+  pluginUrl: `http://${ip}:8888/sdkjs-plugins/template-doc-agent/config.json`,
+  token: 'io2SNULV1lLc3gbWsqbDF1KtRD7SoQwJ',
   isDev: true,
   useMock: true, // 开发模式默认使用 Mock 数据
 }
@@ -33,7 +33,7 @@ const prodConfig: AppConfig = {
   documentServerUrl: 'https://doc.your-domain.com',
   apiBaseUrl: 'https://api.your-domain.com/template-editor',
   pluginUrl: 'https://cdn.your-domain.com/plugins/template-doc-agent/config.json',
-  token: 'jwtonlyoffice',
+  token: 'io2SNULV1lLc3gbWsqbDF1KtRD7SoQwJ',
   isDev: false,
   useMock: false,
 }
@@ -70,7 +70,8 @@ export function getDocServerApiUrl(): string {
  * 获取模板回调地址
  */
 export function getCallbackUrl(): string {
-  return `${apiBaseUrl}/api/templates/callback`
+  // return `${apiBaseUrl}/api/templates/callback`
+  return documentServerUrl 
 }
 
 /**

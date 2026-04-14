@@ -1,6 +1,6 @@
 {
   "name": "Template Document Agent",
-  "guid": "asc.{ guid }",
+  "guid": "asc.template-doc-agent",
   "baseUrl": "",
   "variations": [
     {

@@ -47,17 +47,23 @@ const DraggableIndicator = ({ indicator, onInsert }: DraggableIndicatorProps) =>
     },
   })
 
-  const handleInsert = () => {
+  const handleInsert = (e: React.MouseEvent) => {
+    e.stopPropagation()  // 阻止事件冒泡
+    e.preventDefault()
+    console.log('[IndicatorPanel] Click insert:', indicator)
     onInsert?.(indicator)
   }
 
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       className={`indicator-item ${isDragging ? 'dragging' : ''}`}
     >
+      {/* 拖拽手柄 - 只在这里绑定 listeners */}
+      <div className="indicator-drag-handle" {...listeners} {...attributes}>
+        <span className="indicator-item-drag">⠿</span>
+      </div>
+
       <div className="indicator-item-dot" style={{ background: typeColors[indicator.type] }} />
       <div className="indicator-item-content">
         <Text strong>{indicator.name}</Text>
@@ -68,7 +74,7 @@ const DraggableIndicator = ({ indicator, onInsert }: DraggableIndicatorProps) =>
       <Tag color={typeColors[indicator.type]} className="indicator-item-tag">
         {typeLabels[indicator.type]}
       </Tag>
-      {onInsert ? (
+      {onInsert && (
         <Tooltip title="点击插入">
           <Button
             size="small"
@@ -78,8 +84,6 @@ const DraggableIndicator = ({ indicator, onInsert }: DraggableIndicatorProps) =>
             className="indicator-item-insert"
           />
         </Tooltip>
-      ) : (
-        <span className="indicator-item-drag">⠿</span>
       )}
     </div>
   )

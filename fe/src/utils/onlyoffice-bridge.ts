@@ -114,8 +114,15 @@ class OnlyOfficeBridge {
 
       this.on(callbackType, callback)
 
-      // 发送消息
-      const message: PluginMessage = { type, data }
+      // 发送消息 - OnlyOffice 要求特定的消息格式
+      // 外部消息需要包装成 onExternalPluginMessage 格式
+      const message: PluginMessage = {
+        type: 'onExternalPluginMessage',
+        data: {
+          type: type,  // 实际消息类型
+          data: data   // 实际消息数据
+        }
+      }
       const messageJson = JSON.stringify(message)
 
       console.log(`${LOG_PREFIX} 📤 [${msgId}] POSTING TO IFRAME`, {

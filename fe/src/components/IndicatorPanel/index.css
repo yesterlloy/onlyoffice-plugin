@@ -76,8 +76,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px 8px 28px;
-  cursor: grab;
+  padding: 8px 12px;
   transition: background 0.2s;
   border-left: 3px solid transparent;
 }
@@ -89,7 +88,25 @@
 
 .indicator-item.dragging {
   opacity: 0.5;
+}
+
+/* 拖拽手柄 */
+.indicator-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.indicator-drag-handle:active {
   cursor: grabbing;
+}
+
+.indicator-item-drag {
+  color: #d9d9d9;
+  font-size: 14px;
 }
 
 .indicator-item-dot {
@@ -120,12 +137,6 @@
   line-height: 18px;
   border-radius: 4px;
   flex-shrink: 0;
-}
-
-.indicator-item-drag {
-  color: #d9d9d9;
-  font-size: 14px;
-  cursor: grab;
 }
 
 .indicator-item-insert {

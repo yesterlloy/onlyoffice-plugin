@@ -1,10 +1,6 @@
 import { create } from 'zustand'
-import type { IndicatorCategory, IndicatorDetail, DocBlock, DocTagItem } from '@/types'
-import { useMock } from '@/config'
+import type { IndicatorCategory, IndicatorDetail, DocTagItem } from '@/types'
 import config from '@/config'
-
-// 编辑器模式
-export type EditorMode = 'mock' | 'onlyoffice'
 
 interface EditorState {
   // 指标库数据
@@ -12,19 +8,14 @@ interface EditorState {
   indicatorMap: Map<string, IndicatorDetail>
   loading: boolean
 
-  // 编辑器模式
-  editorMode: EditorMode
+  // 编辑器状态
   editorReady: boolean
-
-  // 文档数据（mock 模式）
-  docBlocks: DocBlock[]
-  selectedTagUid: string | null
-  configPanelVisible: boolean
 
   // 当前编辑的标签
   currentEditingTag: DocTagItem | null
+  configPanelVisible: boolean
 
-  // 当前模板信息（onlyoffice 模式）
+  // 当前模板信息
   currentTemplateId: number | null
   documentUrl: string | null
   documentKey: string | null
@@ -34,24 +25,12 @@ interface EditorState {
   setCategories: (categories: IndicatorCategory[]) => void
   setIndicatorMap: (map: Map<string, IndicatorDetail>) => void
   setLoading: (loading: boolean) => void
-  setEditorMode: (mode: EditorMode) => void
   setEditorReady: (ready: boolean) => void
-  setDocBlocks: (blocks: DocBlock[]) => void
-  setSelectedTagUid: (uid: string | null) => void
   setConfigPanelVisible: (visible: boolean) => void
   setCurrentEditingTag: (tag: DocTagItem | null) => void
   setCurrentTemplate: (id: number, url: string, key: string, title: string) => void
-  // 同步 mock 模式配置
-  syncMockConfig: () => void
 
-  // 添加标签到段落（mock 模式）
-  addTagToBlock: (blockUid: string, tag: DocTagItem) => void
-  // 从段落移除标签
-  removeTagFromBlock: (tagUid: string) => void
-  // 更新标签参数
-  updateTagParams: (tagUid: string, paramValues: Record<string, any>) => void
-
-  // OnlyOffice 模式操作（通过 bridge）
+  // OnlyOffice 操作（通过 bridge）
   insertIndicatorToOnlyOffice: (indicator: DocTagItem) => Promise<any>
   removeIndicatorFromOnlyOffice: (uid: string) => Promise<any>
   updateIndicatorParams: (uid: string, paramValues: Record<string, any>) => Promise<any>
@@ -59,42 +38,24 @@ interface EditorState {
   convertToRawTemplate: () => Promise<any>
 }
 
-let tagUidCounter = 100
-
-export const useEditorStore = create<EditorState>((set, get) => ({
+export const useEditorStore = create<EditorState>((set) => ({
   // 初始状态
   categories: [],
   indicatorMap: new Map(),
   loading: false,
-  editorMode: useMock ? 'mock' : 'onlyoffice', // 根据 config.useMock 配置决定默认模式
   editorReady: false,
-  docBlocks: [
-    { uid: 'p1', type: 'heading', level: 1, content: '数据研判季报', items: [] },
-    { uid: 'p2', type: 'paragraph', content: '', items: [] },
-    { uid: 'p3', type: 'heading', level: 2, content: '本期导读', items: [] },
-    { uid: 'p4', type: 'heading', level: 3, content: '★ 总体概况', items: [] },
-    { uid: 'p5', type: 'paragraph', content: '拖拽左侧指标到此处插入...', items: [] },
-    { uid: 'p6', type: 'heading', level: 3, content: '★ 诉求热点', items: [] },
-    { uid: 'p7', type: 'paragraph', content: '拖拽图表或 AI 生成类指标到此处。', items: [] },
-    { uid: 'p8', type: 'heading', level: 3, content: '★ 研判分析与建议', items: [] },
-    { uid: 'p9', type: 'paragraph', content: '拖拽 🤖 AI 智能生成类指标到此处。', items: [] },
-  ],
-  selectedTagUid: null,
-  configPanelVisible: false,
   currentEditingTag: null,
+  configPanelVisible: false,
   currentTemplateId: null,
   documentUrl: config.documentServerUrl,
-  documentKey: 'doc123456',
+  documentKey: 'key123',
   documentTitle: 'new.docx',
 
   // Actions
   setCategories: (categories) => set({ categories }),
   setIndicatorMap: (indicatorMap) => set({ indicatorMap }),
   setLoading: (loading) => set({ loading }),
-  setEditorMode: (mode) => set({ editorMode: mode }),
   setEditorReady: (ready) => set({ editorReady: ready }),
-  setDocBlocks: (docBlocks) => set({ docBlocks }),
-  setSelectedTagUid: (uid) => set({ selectedTagUid: uid }),
   setConfigPanelVisible: (visible) => set({ configPanelVisible: visible }),
   setCurrentEditingTag: (tag) => set({ currentEditingTag: tag }),
   setCurrentTemplate: (id, url, key, title) => set({
@@ -103,48 +64,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     documentKey: key,
     documentTitle: title,
   }),
-
-  // 同步 mock 配置
-  syncMockConfig: () => {
-    // 动态导入 config 以获取最新值
-    import('@/config').then(({ useMock }) => {
-      set({ editorMode: useMock ? 'mock' : 'onlyoffice' })
-    })
-  },
-
-  addTagToBlock: (blockUid, tag) => {
-    set((state) => ({
-      docBlocks: state.docBlocks.map((block) =>
-        block.uid === blockUid
-          ? { ...block, items: [...block.items, { ...tag, uid: `tag_${++tagUidCounter}` }] }
-          : block
-      ),
-    }))
-  },
-
-  removeTagFromBlock: (tagUid) => {
-    set((state) => ({
-      docBlocks: state.docBlocks.map((block) => ({
-        ...block,
-        items: block.items.filter((item) => item.uid !== tagUid),
-      })),
-      selectedTagUid: state.selectedTagUid === tagUid ? null : state.selectedTagUid,
-      configPanelVisible:
-        state.currentEditingTag?.uid === tagUid ? false : state.configPanelVisible,
-      currentEditingTag: state.currentEditingTag?.uid === tagUid ? null : state.currentEditingTag,
-    }))
-  },
-
-  updateTagParams: (tagUid, paramValues) => {
-    set((state) => ({
-      docBlocks: state.docBlocks.map((block) => ({
-        ...block,
-        items: block.items.map((item) =>
-          item.uid === tagUid ? { ...item, paramValues: { ...item.paramValues, ...paramValues } } : item
-        ),
-      })),
-    }))
-  },
 
   // OnlyOffice 模式操作（通过 bridge 发送消息）
   insertIndicatorToOnlyOffice: async (indicator) => {
