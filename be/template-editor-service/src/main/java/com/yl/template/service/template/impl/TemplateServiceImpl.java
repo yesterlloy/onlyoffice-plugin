@@ -1,14 +1,16 @@
 package com.yl.template.service.template.impl;
 
+import cn.hutool.http.HttpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yl.template.common.exception.BusinessException;
 import com.yl.template.common.response.PageResult;
+import com.yl.template.dao.dto.OnlyOfficeCallbackDTO;
 import com.yl.template.dao.dto.TemplateFileVO;
 import com.yl.template.dao.dto.TemplateSaveDTO;
 import com.yl.template.dao.entity.TemplateFile;
 import com.yl.template.dao.mapper.TemplateFileMapper;
-import com.yl.template.oss.AliyunOssClient;
+import com.yl.template.oss.OssClient;
 import com.yl.template.service.template.TemplateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,9 +32,53 @@ import java.util.stream.Collectors;
 public class TemplateServiceImpl implements TemplateService {
 
     private final TemplateFileMapper templateFileMapper;
-    private final AliyunOssClient ossClient;
+    private final OssClient ossClient;
 
     private static final String TEMPLATE_PATH_PREFIX = "templates/";
+
+    @Override
+    public void handleOnlyOfficeCallback(Long id, OnlyOfficeCallbackDTO dto) {
+        log.info("收到 OnlyOffice 回调: id={}, status={}", id, dto.getStatus());
+
+        // status 2: 文档已准备好保存
+        // status 6: 强制保存
+        if (dto.getStatus() == 2 || dto.getStatus() == 6) {
+            TemplateFile entity = templateFileMapper.selectById(id);
+            if (entity == null) {
+                log.error("回调处理失败，模板不存在: id={}", id);
+                return;
+            }
+
+            String downloadUrl = dto.getUrl();
+            log.info("开始从 OnlyOffice 下载更新后的文档: {}", downloadUrl);
+
+            try {
+                // 下载文档字节流
+                byte[] content = HttpUtil.downloadBytes(downloadUrl);
+                if (content == null || content.length == 0) {
+                    log.error("下载文档失败，内容为空: {}", downloadUrl);
+                    return;
+                }
+
+                // 上传到 OSS (使用新 key 以保留历史版本或覆盖)
+                String ossKey = generateOssKey(entity.getName(), "docx");
+                ossClient.upload(ossKey, content);
+
+                // 更新实体信息
+                entity.setOssKey(ossKey);
+                entity.setOssUrl(ossClient.getPublicUrl(ossKey));
+                entity.setFileSize((long) content.length);
+                entity.setVersion(entity.getVersion() + 1);
+                entity.setUpdatedAt(LocalDateTime.now());
+
+                templateFileMapper.updateById(entity);
+                log.info("OnlyOffice 回调处理成功，模板已更新: id={}, version={}", id, entity.getVersion());
+
+            } catch (Exception e) {
+                log.error("OnlyOffice 回调处理异常: id={}, error={}", id, e.getMessage(), e);
+            }
+        }
+    }
 
     @Override
     public PageResult<TemplateFileVO> listTemplates(Integer page, Integer size, Integer status) {

@@ -38,6 +38,7 @@ const TemplateEditorPage = () => {
     documentUrl,
     documentKey,
     documentTitle,
+    currentTemplateId,
     setCurrentTemplate,
     setCurrentEditingTag,
     setConfigPanelVisible,
@@ -285,12 +286,14 @@ const TemplateEditorPage = () => {
           {/* 中间文档编辑区 */}
           <Content className="editor-content">
             {documentUrl ? (
-                <OnlyOfficeEditor
-                  documentUrl={documentUrl}
-                  documentKey={documentKey!}
-                  documentTitle={documentTitle!}
-                />
-              ) : (
+              <OnlyOfficeEditor
+                documentId={currentTemplateId?.toString() || ''}
+                documentUrl={documentUrl}
+                documentKey={documentKey!}
+                documentTitle={documentTitle!}
+              />
+            ) : (
+
                 <div className="editor-placeholder">
                   <Empty description="请先加载模板文件" />
                   <Button type="primary" onClick={() => setLoadModalVisible(true)}>

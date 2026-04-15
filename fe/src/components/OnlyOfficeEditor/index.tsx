@@ -6,6 +6,7 @@ import { onlyOfficeBridge, MESSAGE_TYPES } from '@/utils/onlyoffice-bridge'
 import './index.css'
 
 interface OnlyOfficeEditorProps {
+  documentId: string
   documentUrl: string
   documentKey: string
   documentTitle: string
@@ -24,6 +25,7 @@ declare global {
  * 使用 @onlyoffice/document-editor-react 官方组件
  */
 const OnlyOfficeEditor = ({
+  documentId,
   documentUrl,
   documentKey,
   documentTitle,
@@ -152,7 +154,7 @@ const OnlyOfficeEditor = ({
           url: '/templates',
         },
       },
-      callbackUrl: getCallbackUrl(),
+      callbackUrl: getCallbackUrl(documentId),
     },
     events: {
       onDocumentReady: onDocumentReady,

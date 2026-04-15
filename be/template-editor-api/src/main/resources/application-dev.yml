@@ -5,7 +5,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/onlyoffice?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password: root
+    password: 1qaz2wsx 
     druid:
       initial-size: 5
       min-idle: 5
@@ -30,9 +30,13 @@ spring:
         url-pattern: /*
         exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*"
 
-# 阿里云 OSS 配置
-aliyun:
-  oss:
+# OSS 存储配置
+oss:
+  type: local
+  local:
+    base-path: ./storage
+    api-base-url: http://192.168.1.223:8888/template-editor
+  aliyun:
     endpoint: oss-cn-guangzhou.aliyuncs.com
     bucket-name: template-editor-dev
     access-key-id: your-access-key-id

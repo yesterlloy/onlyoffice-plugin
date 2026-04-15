@@ -16,7 +16,7 @@ import java.util.Date;
  * 阿里云 OSS 操作封装
  */
 @Slf4j
-public class AliyunOssClient {
+public class AliyunOssClient implements OssClient {
 
     private final OSS ossClient;
     private final String bucketName;

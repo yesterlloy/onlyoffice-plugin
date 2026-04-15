@@ -14,3 +14,9 @@
 *.tgz
 .superpowers
 .claude
+.vscode
+.vscode/*
+
+# Local Storage
+storage/
+be/storage/

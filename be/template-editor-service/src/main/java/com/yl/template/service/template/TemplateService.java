@@ -1,6 +1,7 @@
 package com.yl.template.service.template;
 
 import com.yl.template.common.response.PageResult;
+import com.yl.template.dao.dto.OnlyOfficeCallbackDTO;
 import com.yl.template.dao.dto.TemplateFileVO;
 import com.yl.template.dao.dto.TemplateSaveDTO;
 
@@ -10,6 +11,11 @@ import java.util.Map;
  * 模板服务接口
  */
 public interface TemplateService {
+
+    /**
+     * 处理 OnlyOffice 回调
+     */
+    void handleOnlyOfficeCallback(Long id, OnlyOfficeCallbackDTO dto);
 
     /**
      * 分页查询模板列表

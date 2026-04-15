@@ -16,7 +16,7 @@ interface AppConfig {
   token?: string // 可选的认证 token
 }
 
-let ip = '192.168.0.121'
+let ip = '192.168.1.223'
 
 // 开发环境配置
 const devConfig: AppConfig = {
@@ -69,9 +69,8 @@ export function getDocServerApiUrl(): string {
 /**
  * 获取模板回调地址
  */
-export function getCallbackUrl(): string {
-  // return `${apiBaseUrl}/api/templates/callback`
-  return documentServerUrl 
+export function getCallbackUrl(documentId: string): string {
+  return getApiUrl(`/api/templates/${documentId}/callback`)
 }
 
 /**

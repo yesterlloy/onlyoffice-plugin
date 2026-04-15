@@ -1,9 +1,14 @@
 package com.yl.template.api.controller;
 
-import com.yl.template.common.response.PageResult;
-import com.yl.template.common.response.Result;
+import com.yl.template.dao.dto.OnlyOfficeCallbackDTO;
 import com.yl.template.dao.dto.TemplateFileVO;
 import com.yl.template.dao.dto.TemplateSaveDTO;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.yl.template.common.response.PageResult;
+import com.yl.template.common.response.Result;
+
+import java.util.HashMap;
+import java.util.Map;
 import com.yl.template.service.template.TemplateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +28,16 @@ import java.io.OutputStream;
 public class TemplateController {
 
     private final TemplateService templateService;
+
+    @Operation(summary = "OnlyOffice 回调", description = "接收 OnlyOffice 文档保存回调")
+    @PostMapping("/{id}/callback")
+    public Map<String, Integer> onlyOfficeCallback(@PathVariable Long id, @RequestBody OnlyOfficeCallbackDTO dto) {
+        templateService.handleOnlyOfficeCallback(id, dto);
+        // OnlyOffice 要求返回 {"error": 0} 表示接收成功
+        Map<String, Integer> result = new HashMap<>();
+        result.put("error", 0);
+        return result;
+    }
 
     @Operation(summary = "获取模板列表", description = "分页获取模板列表")
     @GetMapping
