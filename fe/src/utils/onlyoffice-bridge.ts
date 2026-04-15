@@ -24,6 +24,7 @@ class OnlyOfficeBridge {
   private messageId = 0
   private broadcastChannel: BroadcastChannel | null = null
   private editorFrame: HTMLIFrameElement | null = null
+  private pluginSource: MessageEventSource | null = null
 
   /**
    * 初始化桥接
@@ -96,9 +97,11 @@ class OnlyOfficeBridge {
     console.log(`${LOG_PREFIX} 📤 [${msgId}] SEND`, { type, data })
 
     return new Promise((resolve, reject) => {
-      if (!this.editorFrame?.contentWindow) {
-        console.error(`${LOG_PREFIX} ❌ [${msgId}] Editor iframe not available`)
-        reject(new Error('Editor iframe not available'))
+      const targetWindow = this.pluginSource || this.editorFrame?.contentWindow
+
+      if (!targetWindow) {
+        console.error(`${LOG_PREFIX} ❌ [${msgId}] Editor target window not available`)
+        reject(new Error('Editor target window not available'))
         return
       }
 
@@ -122,9 +125,15 @@ class OnlyOfficeBridge {
       // 构建消息
       const message: PluginMessage = { type, data }
 
-      // 发送 postMessage 到 iframe
-      console.log(`${LOG_PREFIX} 📤 [${msgId}] postMessage to iframe`)
-      this.editorFrame.contentWindow.postMessage(message, '*')
+      // 发送 postMessage
+      if (this.pluginSource) {
+        console.log(`${LOG_PREFIX} 📤 [${msgId}] postMessage to captured source`)
+      } else {
+        console.log(`${LOG_PREFIX} 📤 [${msgId}] postMessage to iframe`)
+      }
+
+      // @ts-ignore
+      targetWindow.postMessage(message, '*')
     })
   }
 
@@ -196,6 +205,12 @@ class OnlyOfficeBridge {
     const { type, data } = msg
     if (!type) return
 
+    // Capture plugin source from handshake
+    if (type === 'editorReady') {
+      this.pluginSource = event.source
+      console.log(`${LOG_PREFIX} ✅ Captured plugin source from handshake`)
+    }
+
     console.log(`${LOG_PREFIX} 📥 POSTMESSAGE RESPONSE`, { type, data, origin: event.origin })
     this.dispatchToHandlers(type, data)
   }
@@ -215,6 +230,7 @@ class OnlyOfficeBridge {
     this.messageHandlers.clear()
     this.initialized = false
     this.editorFrame = null
+    this.pluginSource = null
     console.log(`${LOG_PREFIX} 🗑️ Bridge destroyed`)
   }
 
