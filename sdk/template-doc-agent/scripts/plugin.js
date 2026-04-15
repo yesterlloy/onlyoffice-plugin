@@ -374,21 +374,16 @@
 
     // 尝试 postMessage 到顶层和父窗口
     try {
-      if (window.top && window.top !== window) {
+      if (window.top) {
         window.top.postMessage(message, '*');
         log('📤 Fallback: sent to window.top');
       }
-    } catch (e) {
-      log('⚠️ window.top failed:', e.message);
-    }
-
-    try {
-      if (window.parent && window.parent !== window) {
+      if (window.parent && window.parent !== window.top) {
         window.parent.postMessage(message, '*');
         log('📤 Fallback: sent to window.parent');
       }
     } catch (e) {
-      log('⚠️ window.parent failed:', e.message);
+      log('⚠️ Fallback postMessage failed:', e.message);
     }
   }
 
