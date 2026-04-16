@@ -3,6 +3,7 @@ import { message } from 'antd'
 import { DocumentEditor } from '@onlyoffice/document-editor-react'
 import config, { getCallbackUrl } from '@/config'
 import { onlyOfficeBridge, MESSAGE_TYPES } from '@/utils/onlyoffice-bridge'
+import type { EditorConfigVO } from '@/types'
 import './index.css'
 
 interface OnlyOfficeEditorProps {
@@ -10,6 +11,7 @@ interface OnlyOfficeEditorProps {
   documentUrl: string
   documentKey: string
   documentTitle: string
+  configVO?: EditorConfigVO | null // 新增
   onError?: (error: Error) => void
 }
 
@@ -29,6 +31,7 @@ const OnlyOfficeEditor = ({
   documentUrl,
   documentKey,
   documentTitle,
+  configVO,
   onError,
 }: OnlyOfficeEditorProps) => {
   const editorRef = useRef<any>(null)
@@ -119,8 +122,25 @@ const OnlyOfficeEditor = ({
     }
   }, [])
 
-  // 编辑器配置
-  const editorConfig = {
+  // 合并编辑器配置
+  const editorConfig = configVO ? {
+    ...configVO.editorConfig,
+    token: configVO.token,
+    editorConfig: {
+      ...configVO.editorConfig.editorConfig,
+      plugins: {
+        autostart: ['asc.template-doc-agent'],
+        pluginsData: [config.pluginUrl],
+      },
+      callbackUrl: configVO.callbackUrl || getCallbackUrl(documentId),
+    },
+    events: {
+      onDocumentReady,
+      onInfo,
+      onError: onErrorEvent,
+    },
+  } : {
+    // 回退到原来的硬编码逻辑 (可选，但为了向后兼容)
     document: {
       fileType: 'docx',
       key: documentKey,
