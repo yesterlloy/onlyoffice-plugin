@@ -86,8 +86,11 @@ public class TemplateServiceImpl implements TemplateService {
         Page<TemplateFile> pageParam = new Page<>(page, size);
 
         LambdaQueryWrapper<TemplateFile> wrapper = new LambdaQueryWrapper<>();
-        if (status != null) {
-            wrapper.eq(TemplateFile::getStatus, status);
+        // 默认只查询启用状态，除非显式传 status=0
+        if (status == null || status == 1) {
+            wrapper.eq(TemplateFile::getStatus, 1);
+        } else {
+            wrapper.eq(TemplateFile::getStatus, 0);
         }
         wrapper.orderByDesc(TemplateFile::getCreatedAt);
 
