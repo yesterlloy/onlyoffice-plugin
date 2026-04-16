@@ -127,18 +127,18 @@ const TemplateManagementPage = () => {
       width: 80,
       align: 'center',
     },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      width: 80,
-      align: 'center',
-      render: (status: number) => (
-        <Tag color={status === 1 ? 'green' : 'red'}>
-          {status === 1 ? '启用' : '禁用'}
-        </Tag>
-      ),
-    },
+    // {
+    //   title: '状态',
+    //   dataIndex: 'status',
+    //   key: 'status',
+    //   width: 80,
+    //   align: 'center',
+    //   render: (status: number) => (
+    //     <Tag color={status === 1 ? 'green' : 'red'}>
+    //       {status === 1 ? '启用' : '禁用'}
+    //     </Tag>
+    //   ),
+    // },
     {
       title: '创建人',
       dataIndex: 'createdBy',
