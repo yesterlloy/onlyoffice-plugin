@@ -132,3 +132,22 @@ export interface PageResult<T> {
   size: number
   totalPages: number
 }
+
+// 打开文档请求
+export interface OpenDocumentRequest {
+  templateId: number
+  userId?: string
+  userName?: string
+}
+
+// OnlyOffice 编辑器配置 VO
+export interface EditorConfigVO {
+  templateId: number
+  templateName: string
+  documentKey: string
+  documentUrl: string
+  documentServerUrl: string
+  callbackUrl: string
+  editorConfig: Record<string, any>
+  token?: string
+}
