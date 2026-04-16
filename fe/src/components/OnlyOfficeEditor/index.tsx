@@ -151,7 +151,7 @@ const OnlyOfficeEditor = ({
         feedback: false,
         forcesave: true,
         goback: {
-          url: '/templates',
+          url: '/example',
         },
       },
       callbackUrl: getCallbackUrl(documentId),

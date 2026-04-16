@@ -126,16 +126,16 @@
     }
 
     // 格式1: 直接格式 { type: 'insertIndicator', data: {...} }
-    if (msg.type && !msg.data?.type) {
-      processMessage(msg, 'postMessage', event);
+    if (msg.type && msg.data) {
+      // 格式2: OnlyOffice SDK 包装格式 { type: 'onExternalPluginMessage', data: { type: '...', data: {...} } }
+      if (msg.type === 'onExternalPluginMessage') {
+        processMessage(msg.data, 'postMessage', event);
+      } else {
+        processMessage(msg, 'postMessage', event);
+      }
       return;
     }
-
-    // 格式2: OnlyOffice SDK 包装格式 { type: 'onExternalPluginMessage', data: { type: '...', data: {...} } }
-    if (msg.type === 'onExternalPluginMessage' && msg.data) {
-      processMessage(msg.data, 'postMessage', event);
-      return;
-    }
+    
   });
 
   log('📦 postMessage listener registered (cross-origin communication)');

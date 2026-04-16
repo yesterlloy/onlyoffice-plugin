@@ -87,6 +87,7 @@
     };
 
     log('🔧 ContentControl config:', JSON.stringify(ccConfig, null, 2));
+    log('window.Asc=', window.Asc)
 
     // 检查 OnlyOffice API 是否可用
     if (!window.Asc || !window.Asc.plugin) {

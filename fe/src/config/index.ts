@@ -21,17 +21,17 @@ let ip = '192.168.1.223'
 // 开发环境配置
 const devConfig: AppConfig = {
   documentServerUrl: `http://${ip}:8888/`,
-  apiBaseUrl: `http://${ip}:8888/example`,
+  apiBaseUrl: `/api`,
   pluginUrl: `http://${ip}:8888/sdkjs-plugins/template-doc-agent/config.json`,
   token: 'io2SNULV1lLc3gbWsqbDF1KtRD7SoQwJ',
   isDev: true,
-  useMock: true, // 开发模式默认使用 Mock 数据
+  useMock: false, // 开发模式默认使用 Mock 数据
 }
 
 // 生产环境配置
 const prodConfig: AppConfig = {
   documentServerUrl: 'https://doc.your-domain.com',
-  apiBaseUrl: 'https://api.your-domain.com/template-editor',
+  apiBaseUrl: '/api',
   pluginUrl: 'https://cdn.your-domain.com/plugins/template-doc-agent/config.json',
   token: 'io2SNULV1lLc3gbWsqbDF1KtRD7SoQwJ',
   isDev: false,
