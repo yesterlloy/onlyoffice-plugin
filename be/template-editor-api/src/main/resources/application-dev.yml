@@ -5,7 +5,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/onlyoffice?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password: 1qaz2wsx 
+    password: root 
     druid:
       initial-size: 5
       min-idle: 5
@@ -58,8 +58,8 @@ ai:
 # OnlyOffice 文档服务器配置
 onlyoffice:
   document-server:
-    url: http://192.168.1.223:8888
-  callback-base-url: http://192.168.1.223:8080/template-editor
+    url: http://192.168.0.121:8888
+  callback-base-url: http://192.168.0.121:8080/template-editor
   jwt-secret: ${ONLYOFFICE_JWT_SECRET:hi4yFgssIvMvD5imXTGoqsGP1bSSkMg7}
   jwt-expire-hours: 24
 

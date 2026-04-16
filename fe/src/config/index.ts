@@ -16,14 +16,14 @@ interface AppConfig {
   token?: string // 可选的认证 token
 }
 
-let ip = '192.168.1.223'
+let ip = '192.168.0.121'
 
 // 开发环境配置
 const devConfig: AppConfig = {
   documentServerUrl: `http://${ip}:8888/`,
   apiBaseUrl: `/api`,
   pluginUrl: `http://${ip}:8888/sdkjs-plugins/template-doc-agent/config.json`,
-  token: 'io2SNULV1lLc3gbWsqbDF1KtRD7SoQwJ',
+  token: 'hi4yFgssIvMvD5imXTGoqsGP1bSSkMg7',
   isDev: true,
   useMock: false, // 开发模式默认使用 Mock 数据
 }

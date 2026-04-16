@@ -110,14 +110,14 @@ public class TemplateServiceImpl implements TemplateService {
         entity.setCreatedAt(LocalDateTime.now());
 
         // 上传模板内容到 OSS
-        if (dto.getContent() != null && !dto.getContent().isEmpty()) {
+        String content = dto.getContent() != null ? dto.getContent() : dto.getName();
+        if (!content.isEmpty()) {
             String ossKey = generateOssKey(dto.getName(), "docx");
-            byte[] content = dto.getContent().getBytes();
-            ossClient.upload(ossKey, content);
-
+            byte[] contentBytes = content.getBytes();
+            ossClient.upload(ossKey, contentBytes);
             entity.setOssKey(ossKey);
             entity.setOssUrl(ossClient.getPublicUrl(ossKey));
-            entity.setFileSize((long) content.length);
+            entity.setFileSize((long) contentBytes.length);
         }
 
         templateFileMapper.insert(entity);

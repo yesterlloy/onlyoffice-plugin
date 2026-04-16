@@ -182,6 +182,7 @@ const OnlyOfficeEditor = ({
       },
       callbackUrl: getCallbackUrl(documentId),
     },
+    token: config.token,
     events: {
       onDocumentReady: onDocumentReady,
       onInfo: onInfo,
