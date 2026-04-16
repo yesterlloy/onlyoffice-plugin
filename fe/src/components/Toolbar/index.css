@@ -26,39 +26,3 @@
   align-items: center;
   gap: 6px;
 }
-
-.toolbar-divider {
-  width: 1px;
-  height: 20px;
-  background: #e8e8e8;
-  margin: 0 4px;
-}
-
-.toolbar-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-}
-
-.toolbar-btn:hover {
-  background: #f5f5f5;
-}
-
-/* 保存弹窗 */
-.save-modal-content {
-  padding-top: 16px;
-}
-
-.save-modal-field {
-  margin-bottom: 16px;
-}
-
-.save-modal-field label {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 6px;
-  color: #374151;
-}

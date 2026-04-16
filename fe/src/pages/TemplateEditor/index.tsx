@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Layout, Spin, Button, message, Modal, Input, Space, Empty } from 'antd'
+import { Layout, Spin, Button, message, Space, Empty } from 'antd'
 import { SaveOutlined, EyeOutlined } from '@ant-design/icons'
 import { DndContext, DragEndEvent, DragOverlay, closestCenter } from '@dnd-kit/core'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useEditorStore } from '@/stores'
-import { getIndicatorCategories, getIndicatorDetail, getTemplateUrl } from '@/api'
+import { getIndicatorCategories, getIndicatorDetail } from '@/api'
 import { onlyOfficeBridge, MESSAGE_TYPES } from '@/utils/onlyoffice-bridge'
 import type { IndicatorDetail, IndicatorMetadata } from '@/types'
 import IndicatorPanel from '@/components/IndicatorPanel'
@@ -26,6 +27,10 @@ const getDefaultParamValues = (detail: IndicatorDetail): Record<string, any> => 
 }
 
 const TemplateEditorPage = () => {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const templateIdFromUrl = searchParams.get('templateId')
+
   const {
     categories,
     setCategories,
@@ -49,21 +54,19 @@ const TemplateEditorPage = () => {
     backendConfig,
   } = useEditorStore()
 
-  const [loadModalVisible, setLoadModalVisible] = useState(false)
-  const [templateIdInput, setTemplateIdInput] = useState('')
   const [activeId, setActiveId] = useState<string | null>(null)
 
-  // 页面加载时自动打开默认模板
+  // 页面加载时根据 URL 参数打开模板
   useEffect(() => {
-    const init = async () => {
-      try {
-        await openTemplate(4)
-      } catch (error) {
-        message.error('加载默认模板失败')
+    if (templateIdFromUrl) {
+      const id = parseInt(templateIdFromUrl)
+      if (!isNaN(id)) {
+        openTemplate(id).catch(() => {
+          message.error('加载模板失败')
+        })
       }
     }
-    init()
-  }, [openTemplate])
+  }, [openTemplate, templateIdFromUrl])
 
   // 加载指标库数据
   useEffect(() => {
@@ -122,24 +125,6 @@ const TemplateEditorPage = () => {
       onlyOfficeBridge.off(MESSAGE_TYPES.EDITOR_READY, () => {})
     }
   }, [setCurrentEditingTag, setConfigPanelVisible, setEditorReady])
-
-  // 加载模板
-  const handleLoadTemplate = async () => {
-    if (!templateIdInput) {
-      message.warning('请输入模板 ID')
-      return
-    }
-
-    try {
-      const id = parseInt(templateIdInput)
-      const result = await getTemplateUrl(id)
-      setCurrentTemplate(id, result.url, `template_${id}_${Date.now()}`, result.name || '模板文档')
-      setLoadModalVisible(false)
-      message.success('模板加载成功')
-    } catch (error) {
-      message.error('模板加载失败')
-    }
-  }
 
   // 处理拖拽开始
   const handleDragStart = (event: DragEndEvent) => {
@@ -272,7 +257,6 @@ const TemplateEditorPage = () => {
         {/* 次级工具栏：操作按钮 */}
         <div className="editor-toolbar-secondary">
           <Space>
-            <Button onClick={() => setLoadModalVisible(true)}>加载模板</Button>
             <Button icon={<EyeOutlined />} onClick={handleGetTags} disabled={!editorReady}>
               查看标签
             </Button>
@@ -310,9 +294,9 @@ const TemplateEditorPage = () => {
             ) : (
 
                 <div className="editor-placeholder">
-                  <Empty description="请先加载模板文件" />
-                  <Button type="primary" onClick={() => setLoadModalVisible(true)}>
-                    加载模板
+                  <Empty description="请先从模板管理页面选择模板进行配置" />
+                  <Button type="primary" onClick={() => navigate('/')}>
+                    前往模板管理
                   </Button>
                 </div>
             )}
@@ -321,21 +305,6 @@ const TemplateEditorPage = () => {
           {/* 右侧配置面板 */}
           <ConfigPanel />
         </Layout>
-
-        {/* 加载模板对话框 */}
-        <Modal
-          title="加载模板"
-          open={loadModalVisible}
-          onOk={handleLoadTemplate}
-          onCancel={() => setLoadModalVisible(false)}
-        >
-          <Input
-            placeholder="请输入模板 ID"
-            value={templateIdInput}
-            onChange={(e) => setTemplateIdInput(e.target.value)}
-            type="number"
-          />
-        </Modal>
       </Layout>
 
       {/* 拖拽预览层 */}
