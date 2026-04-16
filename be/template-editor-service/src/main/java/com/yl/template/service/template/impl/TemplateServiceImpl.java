@@ -14,6 +14,7 @@ import com.yl.template.oss.OssClient;
 import com.yl.template.service.template.TemplateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -110,8 +111,8 @@ public class TemplateServiceImpl implements TemplateService {
         entity.setCreatedAt(LocalDateTime.now());
 
         // 上传模板内容到 OSS
-        String content = dto.getContent() != null ? dto.getContent() : dto.getName();
-        if (!content.isEmpty()) {
+        String content = StringUtils.trimToEmpty(dto.getContent());
+        if (StringUtils.isNotBlank(content)) {
             String ossKey = generateOssKey(dto.getName(), "docx");
             byte[] contentBytes = content.getBytes();
             ossClient.upload(ossKey, contentBytes);
@@ -139,9 +140,10 @@ public class TemplateServiceImpl implements TemplateService {
         entity.setUpdatedAt(LocalDateTime.now());
 
         // 如果有新内容，上传到 OSS
-        if (dto.getContent() != null && !dto.getContent().isEmpty()) {
+        String newContent = StringUtils.trimToEmpty(dto.getContent());
+        if (StringUtils.isNotBlank(newContent)) {
             String ossKey = generateOssKey(dto.getName(), "docx");
-            byte[] content = dto.getContent().getBytes();
+            byte[] content = newContent.getBytes();
             ossClient.upload(ossKey, content);
 
             entity.setOssKey(ossKey);
