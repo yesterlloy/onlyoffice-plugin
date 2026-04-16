@@ -45,11 +45,25 @@ const TemplateEditorPage = () => {
     insertIndicatorToOnlyOffice,
     getDocTagsFromOnlyOffice,
     convertToRawTemplate,
+    openTemplate,
+    backendConfig,
   } = useEditorStore()
 
   const [loadModalVisible, setLoadModalVisible] = useState(false)
   const [templateIdInput, setTemplateIdInput] = useState('')
   const [activeId, setActiveId] = useState<string | null>(null)
+
+  // 页面加载时自动打开默认模板
+  useEffect(() => {
+    const init = async () => {
+      try {
+        await openTemplate(4)
+      } catch (error) {
+        message.error('加载默认模板失败')
+      }
+    }
+    init()
+  }, [openTemplate])
 
   // 加载指标库数据
   useEffect(() => {
@@ -291,6 +305,7 @@ const TemplateEditorPage = () => {
                 documentUrl={documentUrl}
                 documentKey={documentKey!}
                 documentTitle={documentTitle!}
+                configVO={backendConfig}
               />
             ) : (
 
