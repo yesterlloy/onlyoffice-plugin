@@ -3,6 +3,7 @@ package com.yl.template.api.controller;
 import com.yl.template.common.response.Result;
 import com.yl.template.dao.dto.OnlyOfficeCallbackDTO;
 import com.yl.template.service.document.OnlyOfficeDocumentService;
+import com.yl.template.service.document.OnlyOfficeTokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.util.Map;
 public class DocumentController {
 
     private final OnlyOfficeDocumentService documentService;
+    private final OnlyOfficeTokenService tokenService;
 
     @Operation(summary = "打开文档编辑器", description = "获取 OnlyOffice 编辑器配置，用于前端打开文档")
     @PostMapping("/open")
@@ -42,8 +44,22 @@ public class DocumentController {
     @PostMapping("/{templateId}/callback")
     public Map<String, Integer> documentCallback(
             @PathVariable Long templateId,
-            @RequestBody OnlyOfficeCallbackDTO dto) {
-        // 实际保存逻辑由 TemplateService 处理，这里做基本确认
+            @RequestBody OnlyOfficeCallbackDTO dto,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+
+        // 验证 JWT Token
+        if (tokenService.isTokenEnabled()) {
+            String token = null;
+            if (authorization != null && authorization.startsWith("Bearer ")) {
+                token = authorization.substring(7);
+            }
+            if (token == null || tokenService.verifyToken(token) == null) {
+                Map<String, Integer> result = new HashMap<>();
+                result.put("error", 6); // OnlyOffice 错误码：令牌无效
+                return result;
+            }
+        }
+
         logCallback(templateId, dto);
         Map<String, Integer> result = new HashMap<>();
         result.put("error", 0);

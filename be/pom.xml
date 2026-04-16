@@ -51,6 +51,9 @@
 
         <!-- HTTP 客户端 -->
         <okhttp.version>4.12.0</okhttp.version>
+
+        <!-- JWT -->
+        <java-jwt.version>4.4.0</java-jwt.version>
     </properties>
 
     <!-- 依赖管理 -->
@@ -119,6 +122,13 @@
                 <groupId>com.squareup.okhttp3</groupId>
                 <artifactId>okhttp</artifactId>
                 <version>${okhttp.version}</version>
+            </dependency>
+
+            <!-- JWT -->
+            <dependency>
+                <groupId>com.auth0</groupId>
+                <artifactId>java-jwt</artifactId>
+                <version>${java-jwt.version}</version>
             </dependency>
 
             <!-- Knife4j -->

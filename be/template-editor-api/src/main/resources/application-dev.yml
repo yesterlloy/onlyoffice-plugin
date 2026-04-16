@@ -60,6 +60,8 @@ onlyoffice:
   document-server:
     url: http://192.168.1.3:8888
   callback-base-url: http://192.168.1.3:8888/example
+  jwt-secret: ${ONLYOFFICE_JWT_SECRET:io2SNULV1lLc3gbWsqbDF1KtRD7SoQwJ}
+  jwt-expire-hours: 24
 
 logging:
   level:

@@ -48,6 +48,8 @@ onlyoffice:
   document-server:
     url: ${ONLYOFFICE_DOC_SERVER_URL}
   callback-base-url: ${ONLYOFFICE_CALLBACK_URL}
+  jwt-secret: ${ONLYOFFICE_JWT_SECRET}
+  jwt-expire-hours: ${ONLYOFFICE_JWT_EXPIRE_HOURS:24}
 
 logging:
   level:

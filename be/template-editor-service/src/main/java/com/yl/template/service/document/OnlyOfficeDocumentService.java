@@ -25,6 +25,7 @@ public class OnlyOfficeDocumentService {
 
     private final TemplateFileMapper templateFileMapper;
     private final OssClient ossClient;
+    private final OnlyOfficeTokenService tokenService;
 
     @Value("${onlyoffice.document-server.url:http://192.168.1.3:8888}")
     private String documentServerUrl;
@@ -53,6 +54,17 @@ public class OnlyOfficeDocumentService {
         // 构建编辑器配置
         Map<String, Object> config = buildEditorConfig(template, documentKey, documentUrl, callbackUrl, userId, userName);
 
+        // 如果启用了 JWT，生成 token
+        String token = null;
+        if (tokenService.isTokenEnabled()) {
+            Map<String, Object> tokenPayload = new HashMap<>();
+            tokenPayload.put("document", config.get("document"));
+            tokenPayload.put("documentType", config.get("documentType"));
+            tokenPayload.put("editorConfig", config.get("editorConfig"));
+            token = tokenService.generateEditorToken(tokenPayload);
+            log.info("[OnlyOffice] JWT Token 已启用");
+        }
+
         EditorConfigVO vo = new EditorConfigVO();
         vo.setTemplateId(templateId);
         vo.setTemplateName(template.getName());
@@ -61,6 +73,7 @@ public class OnlyOfficeDocumentService {
         vo.setDocumentServerUrl(documentServerUrl);
         vo.setCallbackUrl(callbackUrl);
         vo.setEditorConfig(config);
+        vo.setToken(token);
 
         log.info("生成编辑器配置: templateId={}, documentKey={}", templateId, documentKey);
         return vo;
@@ -152,6 +165,7 @@ public class OnlyOfficeDocumentService {
         private String documentServerUrl;
         private String callbackUrl;
         private Map<String, Object> editorConfig;
+        private String token;
 
         public Long getTemplateId() { return templateId; }
         public void setTemplateId(Long templateId) { this.templateId = templateId; }
@@ -167,5 +181,7 @@ public class OnlyOfficeDocumentService {
         public void setCallbackUrl(String callbackUrl) { this.callbackUrl = callbackUrl; }
         public Map<String, Object> getEditorConfig() { return editorConfig; }
         public void setEditorConfig(Map<String, Object> editorConfig) { this.editorConfig = editorConfig; }
+        public String getToken() { return token; }
+        public void setToken(String token) { this.token = token; }
     }
 }
