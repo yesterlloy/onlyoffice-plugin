@@ -27,10 +27,10 @@ public class OnlyOfficeDocumentService {
     private final OssClient ossClient;
     private final OnlyOfficeTokenService tokenService;
 
-    @Value("${onlyoffice.document-server.url:http://192.168.1.3:8888}")
+    @Value("${onlyoffice.document-server.url:http://192.168.1.223:8888}")
     private String documentServerUrl;
 
-    @Value("${onlyoffice.callback-base-url:http://192.168.1.3:8888}")
+    @Value("${onlyoffice.callback-base-url:http://192.168.1.223:8080/template-editor}")
     private String callbackBaseUrl;
 
     /**

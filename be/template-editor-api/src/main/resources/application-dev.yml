@@ -35,7 +35,7 @@ oss:
   type: local
   local:
     base-path: ./storage
-    api-base-url: http://192.168.1.223:8888/template-editor
+    api-base-url: http://192.168.1.223:8080/template-editor
   aliyun:
     endpoint: oss-cn-guangzhou.aliyuncs.com
     bucket-name: template-editor-dev
@@ -58,9 +58,9 @@ ai:
 # OnlyOffice 文档服务器配置
 onlyoffice:
   document-server:
-    url: http://192.168.1.3:8888
-  callback-base-url: http://192.168.1.3:8888/example
-  jwt-secret: ${ONLYOFFICE_JWT_SECRET:io2SNULV1lLc3gbWsqbDF1KtRD7SoQwJ}
+    url: http://192.168.1.223:8888
+  callback-base-url: http://192.168.1.223:8080/template-editor
+  jwt-secret: ${ONLYOFFICE_JWT_SECRET:hi4yFgssIvMvD5imXTGoqsGP1bSSkMg7}
   jwt-expire-hours: 24
 
 logging:

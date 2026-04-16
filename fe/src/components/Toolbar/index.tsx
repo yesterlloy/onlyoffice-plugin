@@ -11,7 +11,7 @@ import {
   FileAddOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
-import { useTemplateStore } from '@/stores'
+import { useEditorStore } from '@/stores'
 import { createTemplate } from '@/api'
 import './index.css'
 
@@ -21,7 +21,7 @@ const Toolbar = () => {
   const [templateDesc, setTemplateDesc] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const { currentTemplate } = useTemplateStore()
+  const { currentTemplateId: _currentTemplateId } = useEditorStore()
 
   // 格式按钮
   const formatButtons = [

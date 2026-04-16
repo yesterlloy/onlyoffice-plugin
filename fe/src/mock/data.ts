@@ -3,7 +3,7 @@
  * 用于前端功能联调，无需启动后端
  */
 
-import type { IndicatorCategory, IndicatorDetail, IndicatorMetadata, IndicatorParam, Datasource, TemplateFile } from '@/types'
+import type { IndicatorCategory, IndicatorDetail, IndicatorParam, Datasource, TemplateFile } from '@/types'
 
 // ============ 指标分类数据 ============
 

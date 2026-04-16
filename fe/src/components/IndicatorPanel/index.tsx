@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react'
 import { Input, Tree, Tag, Typography, Button, Tooltip } from 'antd'
-import { SearchOutlined, DatabaseOutlined, BarChartOutlined, RobotOutlined, SettingOutlined, PlusOutlined } from '@ant-design/icons'
+import { SearchOutlined, DatabaseOutlined, PlusOutlined } from '@ant-design/icons'
 import { useDraggable } from '@dnd-kit/core'
 import type { IndicatorCategory, IndicatorMetadata, IndicatorType } from '@/types'
-import type { TreeDataNode, TreeProps } from 'antd'
+import type { TreeDataNode } from 'antd'
 import './index.css'
 
 const { Text } = Typography

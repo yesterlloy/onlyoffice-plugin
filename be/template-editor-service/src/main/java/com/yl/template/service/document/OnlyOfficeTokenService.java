@@ -39,7 +39,7 @@ public class OnlyOfficeTokenService {
             log.warn("[OnlyOffice] JWT Secret 未配置，Token 功能已禁用");
             return null;
         }
-
+        log.debug("jwtSecret=" + jwtSecret);
         Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
 
         JWTCreator.Builder builder = JWT.create()
@@ -47,7 +47,12 @@ public class OnlyOfficeTokenService {
 
         // 将 payload 作为 claims 写入
         for (Map.Entry<String, Object> entry : payload.entrySet()) {
-            builder.withClaim(entry.getKey(), String.valueOf(entry.getValue()));
+            Object value = entry.getValue();
+            if (value instanceof Map) {
+                builder.withClaim(entry.getKey(), (Map<String, ?>) value);
+            } else {
+                builder.withClaim(entry.getKey(), String.valueOf(value));
+            }
         }
 
         String token = builder.sign(algorithm);
@@ -73,7 +78,12 @@ public class OnlyOfficeTokenService {
                 .withExpiresAt(new Date(System.currentTimeMillis() + jwtExpireHours * 3600_000L));
 
         for (Map.Entry<String, Object> entry : payload.entrySet()) {
-            builder.withClaim(entry.getKey(), String.valueOf(entry.getValue()));
+            Object value = entry.getValue();
+            if (value instanceof Map) {
+                builder.withClaim(entry.getKey(), (Map<String, ?>) value);
+            } else {
+                builder.withClaim(entry.getKey(), String.valueOf(value));
+            }
         }
 
         String token = builder.sign(algorithm);

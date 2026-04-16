@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import type { IndicatorCategory, IndicatorDetail, DocTagItem, EditorConfigVO } from '@/types'
 import { openDocument } from '@/api'
-import config from '@/config'
 
 interface EditorState {
   // 指标库数据
@@ -51,10 +50,10 @@ export const useEditorStore = create<EditorState>((set) => ({
   currentEditingTag: null,
   configPanelVisible: false,
   currentTemplateId: null,
-  documentUrl: 'http://192.168.1.223:8888/template-editor/files/templates/20260416110039/test.docx',
+  documentUrl: 'http://192.168.1.223:8080/template-editor/files/templates/20260416110039/test.docx',
   documentKey: 'key123',
   documentTitle: 'new.docx',
-  callbackUrl: 'http://192.168.1.3:8888/example/api/documents/4/callback',
+  callbackUrl: 'http://192.168.1.223:8080/example/api/documents/4/callback',
 
   // Actions
   setCategories: (categories) => set({ categories }),

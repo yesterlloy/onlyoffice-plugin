@@ -124,16 +124,22 @@ const OnlyOfficeEditor = ({
 
   // 合并编辑器配置
   const editorConfig = configVO ? {
+    // 后端返回的配置已经包含了 document, documentType, editorConfig 等
     ...configVO.editorConfig,
+    // JWT Token 需要在最外层
     token: configVO.token,
+    // 覆盖/合并具体的 editorConfig 设置
     editorConfig: {
-      ...configVO.editorConfig.editorConfig,
+      ...(configVO.editorConfig.editorConfig as any),
+      // 强制使用前端定义的插件配置
       plugins: {
         autostart: ['asc.template-doc-agent'],
         pluginsData: [config.pluginUrl],
       },
-      callbackUrl: configVO.callbackUrl || getCallbackUrl(documentId),
+      // 使用后端返回的回调地址
+      callbackUrl: configVO.callbackUrl,
     },
+    // 强制使用前端定义的事件处理
     events: {
       onDocumentReady,
       onInfo,

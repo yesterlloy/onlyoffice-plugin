@@ -279,7 +279,7 @@ export function mockGetAiReviews(params?: {
 }
 
 /** 审核通过 */
-export function mockApproveAiReview(reviewId: number): Promise<boolean> {
+export function mockApproveAiReview(_reviewId: number): Promise<boolean> {
   return mockResponse(true)
 }
 
