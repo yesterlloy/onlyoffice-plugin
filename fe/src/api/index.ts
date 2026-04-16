@@ -9,6 +9,8 @@ import type {
   AiPreviewRequest,
   AiPreviewResult,
   PageResult,
+  OpenDocumentRequest,
+  EditorConfigVO,
 } from '@/types'
 
 // ============ 真实 API 实现（非 Mock 模式） ============
@@ -148,6 +150,37 @@ export function downloadTemplate(id: number) {
 /** 获取模板文档 URL（用于 OnlyOffice） */
 export function getTemplateUrl(id: number) {
   return api.getTemplateUrl(id)
+}
+
+/** 打开文档编辑器 (从后端获取配置) */
+export function openDocument(data: OpenDocumentRequest) {
+  if (useMock) {
+    console.log('Mock: Open document', data.templateId)
+    // 返回 Mock 数据
+    return Promise.resolve({
+      templateId: data.templateId,
+      templateName: 'Mock Template',
+      documentKey: `mock_key_${Date.now()}`,
+      documentUrl: 'https://example.com/mock.docx',
+      documentServerUrl: 'https://documentserver.example.com',
+      callbackUrl: 'https://api.example.com/callback',
+      editorConfig: {
+        document: {
+          fileType: 'docx',
+          key: `mock_key_${Date.now()}`,
+          title: 'Mock Template',
+          url: 'https://example.com/mock.docx',
+        },
+        documentType: 'word',
+        editorConfig: {
+          mode: 'edit',
+          lang: 'zh-CN',
+          user: { id: data.userId || 'uid-1', name: data.userName || '模板编辑员' },
+        },
+      },
+    } as EditorConfigVO)
+  }
+  return request.post<EditorConfigVO>('/documents/open', data)
 }
 
 /** 上传模板文件 */
