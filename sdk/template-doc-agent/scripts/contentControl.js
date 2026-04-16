@@ -71,19 +71,18 @@
     // 构建 Content Control 配置
     const ccConfig = {
       Props: {
-        Id: uid,
         Tag: tagJson,
         Title: displayTitle,
-        Lock: 0,  // 0 - 可编辑, 1 - 不可删除, 2 - 不可编辑, 3 - 不可删除且不可编辑
-        Appearance: 1  // 1 - 标签, 2 - 无边框
+        Lock: 0,  // 0 - 可编辑
+        Appearance: 1  // 1 - 标签
       },
-      Style: {
-        TextPr: {
-          Color: style.color,
-          Bold: true,
-          Size: 11
-        }
-      }
+      Script: `
+        var oParagraph = Api.CreateParagraph();
+        oParagraph.AddText("${displayTitle}");
+        oParagraph.SetColor("${style.color}");
+        oParagraph.SetBold(true);
+        Api.GetDocument().InsertContent([oParagraph]);
+      `
     };
 
     log('🔧 ContentControl config:', JSON.stringify(ccConfig, null, 2));
@@ -95,10 +94,12 @@
       throw new Error('OnlyOffice API not available');
     }
 
-    log('📡 Calling InsertAndReplaceContentControls...');
+    log('📡 Calling InsertAndReplaceContentControls with correct nesting...');
 
-    // 使用 OnlyOffice API 创建 Content Control
-    window.Asc.plugin.executeMethod('InsertAndReplaceContentControls', [ccConfig]);
+    // 注意：executeMethod 的第二个参数是传递给内部方法的参数列表。
+    // InsertAndReplaceContentControls 接收一个数组作为唯一参数。
+    // 因此需要嵌套数组: [[ccConfig]]
+    window.Asc.plugin.executeMethod('InsertAndReplaceContentControls', [[ccConfig]]);
 
     logSuccess('Insert API called');
     log('========== INSERT END ==========');

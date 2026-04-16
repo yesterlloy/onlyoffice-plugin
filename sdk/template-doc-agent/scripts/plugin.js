@@ -162,9 +162,58 @@
     // 通知前端插件已就绪 - 尝试多种方式
     reply('editorReady', { initialized: true, timestamp: Date.now() });
     logSuccess('Editor ready notification sent');
+
+
+    // 新版本 (8.2+) 推荐使用 attachEditorEvent
+    try {
+      if (window.Asc.plugin.attachEditorEvent) {
+        // 监听焦点进入 Content Control
+         window.Asc.plugin.attachEditorEvent("onFocusContentControl", function(control) {
+          log('🖱️ EditorEvent: onFocusContentControl', control);
+          if (control && control.InternalId) {
+            onTargetControlClick(control);
+          }
+        });
+
+        // 监听点击事件作为兜底
+        // window.Asc.plugin.attachEditorEvent("onClick", function() {
+        //   log('🖱️ EditorEvent: onClick');
+        //   // 点击时尝试获取当前选中的 Content Control
+        //   window.Asc.plugin.executeMethod('GetCurrentContentControl', [null], function(internalId) {
+        //     console.log('GetCurrentContentControl:', internalId)
+        //     if (internalId) {
+        //       onTargetControlClick(internalId);
+        //     }
+        //   });
+        // });
+        
+        // log('✅ attachEditorEvent listeners initialized');
+      }
+    } catch (e) {
+      log('⚠️ attachEditorEvent failed:', e.message);
+    }
   };
 
-  log('📦 Plugin handlers defined');
+  /**
+   * OnlyOffice 事件：当点击 Content Control 时触发
+   * @param {string} id - Content Control 的 InternalId
+   */
+  function onTargetControlClick(cc) {
+    log('🖱️ Event: onTargetControlClick', cc);
+      if (cc && cc.Tag) {
+        try {
+          // 解析 JSON 标签数据
+          const tagData = JSON.parse(cc.Tag);
+          logSuccess('Found indicator tag, sending to frontend:', tagData.uid);
+
+          // 发送消息给前端
+          reply('tagClicked', tagData);
+
+        } catch (e) {
+          log('⚠️ Non-indicator ContentControl or invalid JSON Tag');
+        }
+      }
+  }
 
   // ========== 消息处理函数 ==========
 
