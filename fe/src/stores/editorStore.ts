@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import type { IndicatorCategory, IndicatorDetail, DocTagItem } from '@/types'
+import type { IndicatorCategory, IndicatorDetail, DocTagItem, EditorConfigVO } from '@/types'
+import { openDocument } from '@/api'
 import config from '@/config'
 
 interface EditorState {
@@ -10,6 +11,7 @@ interface EditorState {
 
   // 编辑器状态
   editorReady: boolean
+  backendConfig: EditorConfigVO | null
 
   // 当前编辑的标签
   currentEditingTag: DocTagItem | null
@@ -29,6 +31,7 @@ interface EditorState {
   setConfigPanelVisible: (visible: boolean) => void
   setCurrentEditingTag: (tag: DocTagItem | null) => void
   setCurrentTemplate: (id: number, url: string, key: string, title: string) => void
+  openTemplate: (templateId: number) => Promise<void>
 
   // OnlyOffice 操作（通过 bridge）
   insertIndicatorToOnlyOffice: (indicator: DocTagItem) => Promise<any>
@@ -44,12 +47,14 @@ export const useEditorStore = create<EditorState>((set) => ({
   indicatorMap: new Map(),
   loading: false,
   editorReady: false,
+  backendConfig: null,
   currentEditingTag: null,
   configPanelVisible: false,
   currentTemplateId: null,
-  documentUrl: config.documentServerUrl,
+  documentUrl: 'http://192.168.1.223:8888/template-editor/files/templates/20260416110039/test.docx',
   documentKey: 'key123',
   documentTitle: 'new.docx',
+  callbackUrl: 'http://192.168.1.3:8888/example/api/documents/4/callback',
 
   // Actions
   setCategories: (categories) => set({ categories }),
@@ -64,6 +69,25 @@ export const useEditorStore = create<EditorState>((set) => ({
     documentKey: key,
     documentTitle: title,
   }),
+
+  openTemplate: async (templateId: number) => {
+    set({ loading: true })
+    try {
+      const config = await openDocument({ templateId })
+      set({
+        backendConfig: config,
+        currentTemplateId: config.templateId,
+        documentUrl: config.documentUrl,
+        documentKey: config.documentKey,
+        documentTitle: config.templateName,
+      })
+    } catch (error) {
+      console.error('Failed to open template:', error)
+      throw error
+    } finally {
+      set({ loading: false })
+    }
+  },
 
   // OnlyOffice 模式操作（通过 bridge 发送消息）
   insertIndicatorToOnlyOffice: async (indicator) => {
