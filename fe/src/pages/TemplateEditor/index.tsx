@@ -99,27 +99,32 @@ const TemplateEditorPage = () => {
   // 监听插件消息
   useEffect(() => {
     // 标签点击
-    onlyOfficeBridge.on(MESSAGE_TYPES.TAG_CLICKED, (data) => {
+    const handleTagClicked = (data: any) => {
+      console.log('[TemplateEditor] Tag clicked message received:', data)
       setCurrentEditingTag(data)
       setConfigPanelVisible(true)
-    })
+    }
 
     // Bridge 就绪（iframe 已连接）
-    onlyOfficeBridge.on(MESSAGE_TYPES.BRIDGE_READY, () => {
+    const handleBridgeReady = () => {
       console.log('[TemplateEditor] Bridge ready received')
       setEditorReady(true)
       message.success('OnlyOffice 编辑器已就绪')
-    })
+    }
 
     // 插件就绪
-    onlyOfficeBridge.on(MESSAGE_TYPES.EDITOR_READY, () => {
+    const handleEditorReady = () => {
       console.log('[TemplateEditor] Plugin ready received')
-    })
+    }
+
+    onlyOfficeBridge.on(MESSAGE_TYPES.TAG_CLICKED, handleTagClicked)
+    onlyOfficeBridge.on(MESSAGE_TYPES.BRIDGE_READY, handleBridgeReady)
+    onlyOfficeBridge.on(MESSAGE_TYPES.EDITOR_READY, handleEditorReady)
 
     return () => {
-      onlyOfficeBridge.off(MESSAGE_TYPES.TAG_CLICKED, () => {})
-      onlyOfficeBridge.off(MESSAGE_TYPES.BRIDGE_READY, () => {})
-      onlyOfficeBridge.off(MESSAGE_TYPES.EDITOR_READY, () => {})
+      onlyOfficeBridge.off(MESSAGE_TYPES.TAG_CLICKED, handleTagClicked)
+      onlyOfficeBridge.off(MESSAGE_TYPES.BRIDGE_READY, handleBridgeReady)
+      onlyOfficeBridge.off(MESSAGE_TYPES.EDITOR_READY, handleEditorReady)
     }
   }, [setCurrentEditingTag, setConfigPanelVisible, setEditorReady])
 

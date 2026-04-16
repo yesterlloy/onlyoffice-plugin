@@ -2,7 +2,7 @@
   "name": "Template Document Agent",
   "guid": "asc.template-doc-agent",
   "baseUrl": "",
-  "isSystem": true,
+  "type": "system",
   "variations": [
     {
       "description": "Template Document Agent - Content Control operations for template editor",
@@ -15,10 +15,16 @@
         }
       ],
       "isViewer": false,
+      "isSystem": true,
       "EditorsSupport": ["word"],
       "isVisual": false,
       "initDataType": "none",
-      "initOnSelectionChanged": false
+      "initOnSelectionChanged": true,
+      "events": [
+        "onTargetControlClick",
+        "event_onTargetControlClick"
+      ]
+
     }
   ]
 }
