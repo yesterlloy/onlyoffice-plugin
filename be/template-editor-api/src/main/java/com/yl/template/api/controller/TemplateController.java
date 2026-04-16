@@ -16,7 +16,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.io.OutputStream;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 模板管理 Controller
@@ -87,8 +89,29 @@ public class TemplateController {
             OutputStream out = response.getOutputStream();
             out.write(content);
             out.flush();
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new RuntimeException("下载模板失败", e);
+        }
+    }
+
+    @Operation(summary = "获取模板文档 URL", description = "获取模板文档 URL（用于 OnlyOffice 编辑器）")
+    @GetMapping("/{id}/url")
+    public Result<TemplateService.TemplateUrlVO> getTemplateUrl(@PathVariable Long id) {
+        return Result.success(templateService.getTemplateUrl(id));
+    }
+
+    @Operation(summary = "上传模板文件", description = "上传 .docx 模板文件到 OSS")
+    @PostMapping("/upload")
+    public Result<TemplateFileVO> uploadTemplate(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(required = false, defaultValue = "") String name,
+            @RequestParam(required = false, defaultValue = "") String description,
+            @RequestParam(required = false, defaultValue = "admin") String createdBy) {
+        try {
+            String fileName = name.isEmpty() ? file.getOriginalFilename() : name;
+            return Result.success(templateService.uploadTemplate(fileName, description, file.getBytes(), createdBy));
+        } catch (IOException e) {
+            throw new RuntimeException("上传模板文件失败", e);
         }
     }
 }

@@ -51,4 +51,27 @@ public interface TemplateService {
      * 获取模板指标映射
      */
     Map<String, Object> getTemplateIndicatorMapping(Long templateId);
+
+    /**
+     * 获取模板文档 URL（用于 OnlyOffice 编辑器）
+     */
+    TemplateUrlVO getTemplateUrl(Long id);
+
+    /**
+     * 上传模板文件
+     */
+    TemplateFileVO uploadTemplate(String name, String description, byte[] content, String createdBy);
+
+    /**
+     * 模板 URL VO
+     */
+    class TemplateUrlVO {
+        private String url;
+        private String name;
+
+        public String getUrl() { return url; }
+        public void setUrl(String url) { this.url = url; }
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+    }
 }

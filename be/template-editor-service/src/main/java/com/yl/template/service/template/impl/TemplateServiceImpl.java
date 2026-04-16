@@ -201,6 +201,40 @@ public class TemplateServiceImpl implements TemplateService {
         return new HashMap<>();
     }
 
+    @Override
+    public TemplateService.TemplateUrlVO getTemplateUrl(Long id) {
+        TemplateFile entity = templateFileMapper.selectById(id);
+        if (entity == null) {
+            throw new BusinessException("模板不存在: " + id);
+        }
+        TemplateService.TemplateUrlVO vo = new TemplateService.TemplateUrlVO();
+        vo.setUrl(ossClient.generateUrl(entity.getOssKey()));
+        vo.setName(entity.getName());
+        return vo;
+    }
+
+    @Override
+    public TemplateFileVO uploadTemplate(String name, String description, byte[] content, String createdBy) {
+        String ossKey = generateOssKey(name, "docx");
+        ossClient.upload(ossKey, content);
+
+        TemplateFile entity = new TemplateFile();
+        entity.setName(name);
+        entity.setDescription(description);
+        entity.setOssKey(ossKey);
+        entity.setOssUrl(ossClient.getPublicUrl(ossKey));
+        entity.setFileSize((long) content.length);
+        entity.setVersion(1);
+        entity.setStatus(1);
+        entity.setCreatedBy(createdBy);
+        entity.setCreatedAt(LocalDateTime.now());
+
+        templateFileMapper.insert(entity);
+        log.info("上传模板文件成功: id={}, name={}", entity.getId(), entity.getName());
+
+        return toVO(entity);
+    }
+
     private TemplateFileVO toVO(TemplateFile entity) {
         TemplateFileVO vo = new TemplateFileVO();
         vo.setId(entity.getId());

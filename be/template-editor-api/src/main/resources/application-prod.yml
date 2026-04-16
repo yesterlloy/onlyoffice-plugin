@@ -43,6 +43,12 @@ ai:
       connect: 10000
       read: 60000
 
+# OnlyOffice 文档服务器配置
+onlyoffice:
+  document-server:
+    url: ${ONLYOFFICE_DOC_SERVER_URL}
+  callback-base-url: ${ONLYOFFICE_CALLBACK_URL}
+
 logging:
   level:
     root: INFO

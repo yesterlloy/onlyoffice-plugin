@@ -55,6 +55,12 @@ ai:
       connect: 10000
       read: 60000
 
+# OnlyOffice 文档服务器配置
+onlyoffice:
+  document-server:
+    url: http://192.168.1.3:8888
+  callback-base-url: http://192.168.1.3:8888/example
+
 logging:
   level:
     com.yl.template: DEBUG

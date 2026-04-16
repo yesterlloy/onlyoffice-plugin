@@ -6,6 +6,7 @@ import com.yl.template.dao.dto.IndicatorDetailVO;
 import com.yl.template.dao.dto.IndicatorParamVO;
 import com.yl.template.service.indicator.IndicatorCategoryService;
 import com.yl.template.service.indicator.IndicatorMetadataService;
+import com.yl.template.service.indicator.IndicatorParamService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class IndicatorController {
 
     private final IndicatorCategoryService categoryService;
     private final IndicatorMetadataService metadataService;
+    private final IndicatorParamService paramService;
 
     @Operation(summary = "获取指标分类树", description = "获取完整指标分类树（含分类下的指标列表）")
     @GetMapping("/categories")
@@ -48,5 +50,12 @@ public class IndicatorController {
     @GetMapping("/type/{type}")
     public Result<List<IndicatorDetailVO>> getIndicatorsByType(@PathVariable String type) {
         return Result.success(metadataService.getIndicatorsByType(type));
+    }
+
+    @Operation(summary = "获取动态选项", description = "根据选项来源获取动态下拉选项")
+    @GetMapping("/params/options")
+    public Result<List<IndicatorParamService.OptionVO>> getDynamicOptions(
+            @RequestParam String source) {
+        return Result.success(paramService.getDynamicOptions(source));
     }
 }
