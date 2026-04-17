@@ -8,13 +8,13 @@ Currently, the "Save" button in the frontend is purely cosmetic. On the backend,
 
 ## 3. Architecture & Data Flow
 
-### 3.1. Save Trigger (Force Save)
+### 3.1. Save Trigger (Frontend Request Save)
 1. **Frontend**: User clicks the "Save" button in the `Toolbar`.
-2. **Backend API**: The frontend calls `POST /api/documents/{templateId}/force-save`.
-3. **Command Service**: The backend sends a `forcesave` command to the OnlyOffice Command Service:
-   - URL: `${onlyoffice.document-server.url}/coauthoring/CommandService.ashx`
-   - Payload: `{"c": "forcesave", "key": "{documentKey}"}`
-4. **OnlyOffice Response**: OnlyOffice acknowledges the command and asynchronously triggers a callback to our server.
+2. **SDK Interaction**: The frontend retrieves the `docEditor` instance and calls the service command:
+   ```javascript
+   window.docEditor.serviceCommand('forceSave');
+   ```
+3. **OnlyOffice Action**: The Document Server acknowledges the request and asynchronously triggers a callback to our server.
 
 ### 3.2. Callback Handling
 1. **Entry Point**: `DocumentController.documentCallback` receives a POST request from OnlyOffice.
@@ -28,14 +28,16 @@ Currently, the "Save" button in the frontend is purely cosmetic. On the backend,
 ## 4. Component Changes
 
 ### 4.1. Backend (Java)
-- **OnlyOfficeDocumentService**: Add logic to call the OnlyOffice Command Service using `HttpUtil`.
 - **DocumentController**: Update callback handler to correctly call `TemplateService`.
 - **TemplateServiceImpl**: Ensure robust downloading and OSS versioning.
+- **OnlyOfficeDocumentService**: Remove or deprecate the internal `forceSave` method that only bumped versions, as the trigger now comes from the frontend.
 
 ### 4.2. Frontend (React/TS)
-- **API Layer**: Add `forceSaveDocument` function in `api/index.ts`.
-- **Toolbar Component**: Add `onClick` handler to the Save button, including loading states and user notifications.
-- **Store**: Use `currentTemplateId` from `editorStore`.
+- **Toolbar Component**: 
+  - Access `window.docEditor` (initialized in `OnlyOfficeEditor`).
+  - Add `onClick` handler to call `serviceCommand('forceSave')`.
+  - Provide immediate UI feedback (e.g., "Requesting save...").
+
 
 ## 5. Security & Error Handling
 - **JWT**: Ensure requests to the Command Service include appropriate JWT headers if enabled.
