@@ -15,13 +15,6 @@ interface OnlyOfficeEditorProps {
   onError?: (error: Error) => void
 }
 
-// 全局保存 DocEditor 实例
-declare global {
-  interface Window {
-    docEditor?: any
-  }
-}
-
 /**
  * OnlyOffice 编辑器组件
  * 使用 @onlyoffice/document-editor-react 官方组件

@@ -2,13 +2,6 @@ import { Button, message } from 'antd'
 import { EyeOutlined, SaveOutlined } from '@ant-design/icons'
 import './index.css'
 
-// 声明全局变量以避免 TS 错误
-declare global {
-  interface Window {
-    docEditor?: any
-  }
-}
-
 const Toolbar = () => {
   const handleSave = () => {
     try {
