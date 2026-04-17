@@ -4,6 +4,7 @@ import com.yl.template.common.response.Result;
 import com.yl.template.dao.dto.OnlyOfficeCallbackDTO;
 import com.yl.template.service.document.OnlyOfficeDocumentService;
 import com.yl.template.service.document.OnlyOfficeTokenService;
+import com.yl.template.service.template.TemplateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class DocumentController {
 
     private final OnlyOfficeDocumentService documentService;
     private final OnlyOfficeTokenService tokenService;
+    private final TemplateService templateService;
 
     @Operation(summary = "打开文档编辑器", description = "获取 OnlyOffice 编辑器配置，用于前端打开文档")
     @PostMapping("/open")
@@ -60,32 +62,10 @@ public class DocumentController {
             }
         }
 
-        logCallback(templateId, dto);
+        templateService.handleOnlyOfficeCallback(templateId, dto);
         Map<String, Integer> result = new HashMap<>();
         result.put("error", 0);
         return result;
-    }
-
-    private void logCallback(Long templateId, OnlyOfficeCallbackDTO dto) {
-        switch (dto.getStatus()) {
-            case 1:
-                // 文档正在编辑中
-                break;
-            case 2:
-            case 6:
-                // 文档已准备好保存 / 强制保存
-                documentService.forceSave(templateId);
-                break;
-            case 3:
-            case 7:
-                // 保存错误
-                break;
-            case 4:
-                // 文档未修改
-                break;
-            default:
-                break;
-        }
     }
 
     /**
