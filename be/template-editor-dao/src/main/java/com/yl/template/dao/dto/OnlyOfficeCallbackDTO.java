@@ -61,7 +61,7 @@ public class OnlyOfficeCallbackDTO implements Serializable {
     /**
      * 历史记录 JSON（如果启用版本历史）
      */
-    private String history;
+    private Map<String, Object> history;
 
     /**
      * 更改日志
