@@ -80,21 +80,6 @@ public class OnlyOfficeDocumentService {
     }
 
     /**
-     * 强制保存文档
-     */
-    public void forceSave(Long templateId) {
-        TemplateFile template = templateFileMapper.selectById(templateId);
-        if (template == null) {
-            throw new BusinessException("模板不存在: " + templateId);
-        }
-        // 实际保存由 OnlyOffice 回调触发，这里仅更新文档 Key 以标记新版本
-        template.setVersion(template.getVersion() + 1);
-        template.setUpdatedAt(LocalDateTime.now());
-        templateFileMapper.updateById(template);
-        log.info("强制保存文档: templateId={}, newVersion={}", templateId, template.getVersion());
-    }
-
-    /**
      * 生成文档 Key
      */
     private String generateDocumentKey(TemplateFile template) {

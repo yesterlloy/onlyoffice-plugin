@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * OnlyOffice 文档编辑 Controller
  */
-@Tag(name = "文档编辑", description = "OnlyOffice 文档打开、回调、强制保存")
+@Tag(name = "文档编辑", description = "OnlyOffice 文档打开、回调")
 @RestController
 @RequestMapping("/api/documents")
 @RequiredArgsConstructor
@@ -33,13 +33,6 @@ public class DocumentController {
         String userId = request.getUserId() != null ? request.getUserId() : "default-user";
         String userName = request.getUserName() != null ? request.getUserName() : "模板编辑员";
         return Result.success(documentService.generateEditorConfig(request.getTemplateId(), userId, userName));
-    }
-
-    @Operation(summary = "强制保存文档", description = "触发 OnlyOffice 强制保存文档")
-    @PostMapping("/{templateId}/force-save")
-    public Result<Void> forceSave(@PathVariable Long templateId) {
-        documentService.forceSave(templateId);
-        return Result.success();
     }
 
     @Operation(summary = "OnlyOffice 回调", description = "接收 OnlyOffice 文档保存回调")
