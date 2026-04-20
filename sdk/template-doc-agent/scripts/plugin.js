@@ -203,11 +203,11 @@
       if (cc && cc.Tag) {
         try {
           // 解析 JSON 标签数据
-          const tagData = JSON.parse(cc.Tag);
-          logSuccess('Found indicator tag, sending to frontend:', tagData.uid);
+          // const tagData = JSON.parse(cc.Tag);
+          logSuccess('Found indicator tag, sending to frontend:', cc);
 
           // 发送消息给前端
-          reply('tagClicked', tagData);
+          reply('tagClicked', cc);
 
         } catch (e) {
           log('⚠️ Non-indicator ContentControl or invalid JSON Tag');

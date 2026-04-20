@@ -112,6 +112,7 @@ const OnlyOfficeEditor = ({
 
     return () => {
       onlyOfficeBridge.destroy()
+      window.docEditor = null
     }
   }, [])
 

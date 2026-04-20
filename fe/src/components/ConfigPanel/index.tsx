@@ -60,6 +60,7 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
 
     try {
       const values = await form.validateFields()
+      console.log('currentEditingTag', currentEditingTag)
       await updateIndicatorParams(currentEditingTag.uid, values)
       message.success('配置已保存')
       handleClose()

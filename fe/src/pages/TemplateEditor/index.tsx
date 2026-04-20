@@ -44,7 +44,6 @@ const TemplateEditorPage = () => {
     documentKey,
     documentTitle,
     currentTemplateId,
-    setCurrentTemplate,
     setCurrentEditingTag,
     setConfigPanelVisible,
     insertIndicatorToOnlyOffice,

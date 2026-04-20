@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Table, Button, Space, Modal, Form, Input, message, Tag, Popconfirm } from 'antd'
+import { Table, Button, Space, Modal, Form, Input, message, Popconfirm } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { getTemplates, createTemplate, updateTemplate, deleteTemplate } from '@/api'

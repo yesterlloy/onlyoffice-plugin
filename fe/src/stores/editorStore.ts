@@ -175,7 +175,7 @@ export const useEditorStore = create<EditorState>((set) => ({
     console.log('[Store] 🔄 convertToRawTemplate START')
     const { onlyOfficeBridge, MESSAGE_TYPES } = await import('@/utils/onlyoffice-bridge')
     try {
-      const result = await onlyOfficeBridge.send(MESSAGE_TYPES.CONVERT_TO_RAW)
+      const result = await onlyOfficeBridge.send(MESSAGE_TYPES.CONVERT_TO_RAW, { id: 1})
       return result
     } catch (error) {
       console.error('[Store] Convert to raw failed:', error)
