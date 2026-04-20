@@ -122,49 +122,71 @@
   }
 
   /**
-   * 原始 → 可视化转换
+   * 原始 → 可视化转换 (Async)
    * 将模板语法转换为 Content Control
    *
    * @param {Object} indicatorMap - 指标映射表 { expression: indicatorInfo }
    */
-  function rawToVisual(indicatorMap) {
+  async function rawToVisual(indicatorMap) {
     log('========== RAW_TO_VISUAL START ==========');
-    log('📥 indicatorMap:', JSON.stringify(indicatorMap, null, 2));
+    
+    // 1. 获取文档全文并查找所有表达式
+    const content = await executeMethodPromise('GetDocumentContent', []);
+    if (!content) {
+      logError('No document content');
+      return;
+    }
 
-    // 获取文档全文
-    log('📡 Calling GetDocumentContent...');
+    const expressions = findExpressions(content);
+    log('🔍 Found', expressions.length, 'expressions');
 
-    window.Asc.plugin.executeMethod('GetDocumentContent', [], function(content) {
-      log('📥 Document content received, length:', content ? content.length : 0);
+    // 2. 依次处理每个表达式
+    for (const expr of expressions) {
+      const indicatorInfo = indicatorMap[expr.full];
+      if (indicatorInfo) {
+        log('✅ Matching indicator:', indicatorInfo.name, 'for', expr.full);
+        
+        // 查找并选中
+        // 注意：Search 可能返回多个结果，这里简单处理第一个
+        const searchResult = await executeMethodPromise('Search', [{
+          Text: expr.full,
+          MatchCase: true,
+          MatchWholeWord: false
+        }]);
 
-      if (!content) {
-        logError('No document content');
-        return;
-      }
-
-      // 1. 查找所有模板表达式
-      log('🔍 Finding expressions in document...');
-      const expressions = findExpressions(content);
-      log('🔍 Found', expressions.length, 'expressions:', JSON.stringify(expressions, null, 2));
-
-      // 2. 对每个表达式，查找对应的指标信息
-      log('🔄 Matching expressions to indicators...');
-      expressions.forEach(function(expr) {
-        log('🔄 Processing expression:', expr.full);
-
-        const indicatorInfo = indicatorMap[expr.full];
-        if (indicatorInfo) {
-          log('✅ Found matching indicator:', indicatorInfo.name);
-          // 3. 创建 Content Control 替换原始文本
-          createContentControlFromExpression(expr, indicatorInfo);
-        } else {
-          log('⚠️ No matching indicator for:', expr.full);
+        if (searchResult && searchResult.length > 0) {
+          log('📍 Expression found at position, replacing with Content Control...');
+          
+          // 选中第一个匹配项
+          await executeMethodPromise('SelectText', [searchResult[0]]);
+          
+          // 创建并插入 Content Control
+          await createContentControlFromExpressionAsync(expr, indicatorInfo);
         }
-      });
-    });
+      }
+    }
 
     logSuccess('rawToVisual complete');
     log('========== RAW_TO_VISUAL END ==========');
+  }
+
+  /**
+   * 异步创建 Content Control
+   */
+  async function createContentControlFromExpressionAsync(expr, indicatorInfo) {
+    const tagData = {
+      uid: generateUid(),
+      type: indicatorInfo.type || expr.type,
+      indicatorId: indicatorInfo.indicatorId,
+      code: indicatorInfo.code,
+      field: indicatorInfo.field,
+      name: indicatorInfo.name,
+      paramValues: indicatorInfo.paramValues || {}
+    };
+
+    // 直接调用 ContentControlModule.insert 的核心逻辑
+    // 为了保持一致性，我们在这里调用它
+    window.ContentControlModule.insert(tagData);
   }
 
   /**
@@ -299,33 +321,6 @@
 
     log('🔎 Detected type: unknown');
     return 'unknown';
-  }
-
-  /**
-   * 根据表达式创建 Content Control
-   */
-  function createContentControlFromExpression(expr, indicatorInfo) {
-    log('🔧 createContentControlFromExpression START');
-    log('🔧 Expression:', expr);
-    log('🔧 IndicatorInfo:', indicatorInfo);
-
-    const tagData = {
-      uid: generateUid(),
-      type: indicatorInfo.type || expr.type,
-      indicatorId: indicatorInfo.indicatorId,
-      code: indicatorInfo.code,
-      field: indicatorInfo.field,
-      name: indicatorInfo.name,
-      paramValues: indicatorInfo.paramValues || {}
-    };
-
-    log('🔧 Creating tagData:', JSON.stringify(tagData, null, 2));
-
-    // 调用 ContentControl 模块创建
-    log('📡 Calling ContentControlModule.insert...');
-    window.ContentControlModule.insert(tagData);
-
-    logSuccess('ContentControl created from expression');
   }
 
   /**
