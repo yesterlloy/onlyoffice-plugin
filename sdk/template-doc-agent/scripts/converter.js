@@ -65,43 +65,60 @@
   };
 
   /**
-   * 可视化 → 原始转换
+   * 可视化 → 原始转换 (Async)
    * 将 Content Control 转换为模板语法
    *
-   * @returns {string} - 原始模板内容
+   * @returns {Promise<string>} - 原始模板内容
    */
-  function visualToRaw() {
+  async function visualToRaw() {
     log('========== VISUAL_TO_RAW START ==========');
 
-    let rawContent = '';
+    // 1. 获取所有 Content Control
+    log('📋 Calling GetAllContentControls...');
+    const controls = await executeMethodPromise('GetAllContentControls', []);
+    
+    if (!controls || !Array.isArray(controls) || controls.length === 0) {
+      log('⚠️ No ContentControls found, fetching document content directly');
+      const content = await executeMethodPromise('GetDocumentContent', []);
+      logSuccess('visualToRaw complete (no tags)');
+      return content || '';
+    }
 
-    log('📡 Calling GetDocumentContent...');
+    log('📊 Found', controls.length, 'controls for conversion');
 
-    // 获取文档全文
-    window.Asc.plugin.executeMethod('GetDocumentContent', [], function(content) {
-      log('📥 Document content received, length:', content ? content.length : 0);
-      rawContent = content || '';
-    });
+    // 2. 依次将控件替换为表达式
+    // 注意：需要从后往前处理或者确保顺序不影响位置
+    // ONLYOFFICE 的 Select + InsertText 比较稳妥
+    for (let i = 0; i < controls.length; i++) {
+      const cc = controls[i];
+      try {
+        const tagData = JSON.parse(cc.Tag);
+        const expression = generateExpression(tagData);
+        log(`🔄 Replacing CC [${cc.Id}] with: ${expression}`);
 
-    // 获取所有 Content Control
-    log('📋 Getting all ContentControl tags...');
-    const tags = window.ContentControlModule.getAllTags();
-    log('📋 Found', tags.length, 'tags:', JSON.stringify(tags, null, 2));
+        // 选中并替换
+        await executeMethodPromise('SelectContentControl', [cc.Id]);
+        await executeMethodPromise('InsertText', [expression]);
+      } catch (e) {
+        logError(`Failed to process control ${cc.Id}:`, e.message);
+      }
+    }
 
-    // 替换每个 Content Control 为模板表达式
-    log('🔄 Processing tags for conversion...');
-    tags.forEach(function(tag) {
-      log('🔄 Processing tag:', tag.uid);
-      const expression = generateExpression(tag);
-      log('📝 Generated expression:', expression);
-      // 替换 Content Control 为表达式
-      // 实际实现需要遍历文档并替换
-    });
+    // 3. 获取替换后的全文内容
+    log('📡 Capturing raw content...');
+    const rawContent = await executeMethodPromise('GetDocumentContent', []);
+    log('📥 Raw content captured, length:', rawContent ? rawContent.length : 0);
+
+    // 4. 恢复文档 (Undo 之前的 N 次操作)
+    log('⏪ Restoring document via Undo...');
+    for (let i = 0; i < controls.length; i++) {
+      await executeMethodPromise('Undo', []);
+    }
 
     logSuccess('visualToRaw complete');
     log('========== VISUAL_TO_RAW END ==========');
 
-    return rawContent;
+    return rawContent || '';
   }
 
   /**
