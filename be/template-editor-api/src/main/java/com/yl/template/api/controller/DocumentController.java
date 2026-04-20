@@ -8,6 +8,7 @@ import com.yl.template.service.template.TemplateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -16,6 +17,7 @@ import java.util.Map;
 /**
  * OnlyOffice 文档编辑 Controller
  */
+@Slf4j
 @Tag(name = "文档编辑", description = "OnlyOffice 文档打开、回调")
 @RestController
 @RequestMapping("/api/documents")
@@ -42,6 +44,9 @@ public class DocumentController {
             @RequestBody OnlyOfficeCallbackDTO dto,
             @RequestHeader(value = "Authorization", required = false) String authorization) {
 
+        log.info("=== OnlyOffice Callback 入口 === templateId={}, dto={}, hasAuth={}",
+                templateId, dto, authorization != null);
+
         // 验证 JWT Token
         if (tokenService.isTokenEnabled()) {
             String token = null;
@@ -49,15 +54,18 @@ public class DocumentController {
                 token = authorization.substring(7);
             }
             if (token == null || tokenService.verifyToken(token) == null) {
+                log.warn("OnlyOffice Callback Token验证失败: templateId={}", templateId);
                 Map<String, Integer> result = new HashMap<>();
                 result.put("error", 6); // OnlyOffice 错误码：令牌无效
                 return result;
             }
+            log.info("OnlyOffice Callback Token验证成功: templateId={}", templateId);
         }
 
         templateService.handleOnlyOfficeCallback(templateId, dto);
         Map<String, Integer> result = new HashMap<>();
         result.put("error", 0);
+        log.info("=== OnlyOffice Callback 返回 === templateId={}, result={}", templateId, result);
         return result;
     }
 

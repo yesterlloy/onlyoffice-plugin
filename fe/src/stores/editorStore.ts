@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { IndicatorCategory, IndicatorDetail, DocTagItem, EditorConfigVO } from '@/types'
 import { openDocument } from '@/api'
+import { onlyOfficeBridge, MESSAGE_TYPES } from '@/utils/onlyoffice-bridge'
 
 interface EditorState {
   // 指标库数据
@@ -95,7 +96,6 @@ export const useEditorStore = create<EditorState>((set) => ({
       timestamp: new Date().toISOString()
     })
 
-    const { onlyOfficeBridge, MESSAGE_TYPES } = await import('@/utils/onlyoffice-bridge')
 
     console.log('[Store] 📦 Bridge loaded', {
       bridgeInitialized: onlyOfficeBridge.isInitialized()
@@ -131,7 +131,6 @@ export const useEditorStore = create<EditorState>((set) => ({
 
   removeIndicatorFromOnlyOffice: async (uid) => {
     console.log('[Store] 🗑️ removeIndicatorFromOnlyOffice START', { uid })
-    const { onlyOfficeBridge, MESSAGE_TYPES } = await import('@/utils/onlyoffice-bridge')
     try {
       console.log('[Store] 📤 Sending REMOVE_INDICATOR message')
       const result = await onlyOfficeBridge.send(MESSAGE_TYPES.REMOVE_INDICATOR, { uid })
@@ -145,7 +144,6 @@ export const useEditorStore = create<EditorState>((set) => ({
 
   updateIndicatorParams: async (uid, paramValues) => {
     console.log('[Store] ⚙️ updateIndicatorParams START', { uid, paramValues })
-    const { onlyOfficeBridge, MESSAGE_TYPES } = await import('@/utils/onlyoffice-bridge')
     try {
       console.log('[Store] 📤 Sending UPDATE_PARAMS message')
       const result = await onlyOfficeBridge.send(MESSAGE_TYPES.UPDATE_PARAMS, { uid, paramValues })
@@ -159,7 +157,6 @@ export const useEditorStore = create<EditorState>((set) => ({
 
   getDocTagsFromOnlyOffice: async () => {
     console.log('[Store] 📋 getDocTagsFromOnlyOffice START')
-    const { onlyOfficeBridge, MESSAGE_TYPES } = await import('@/utils/onlyoffice-bridge')
     try {
       console.log('[Store] 📤 Sending GET_DOC_TAGS message')
       const result = await onlyOfficeBridge.send(MESSAGE_TYPES.GET_DOC_TAGS)
@@ -173,7 +170,6 @@ export const useEditorStore = create<EditorState>((set) => ({
 
   convertToRawTemplate: async () => {
     console.log('[Store] 🔄 convertToRawTemplate START')
-    const { onlyOfficeBridge, MESSAGE_TYPES } = await import('@/utils/onlyoffice-bridge')
     try {
       const result = await onlyOfficeBridge.send(MESSAGE_TYPES.CONVERT_TO_RAW, { id: 1})
       return result

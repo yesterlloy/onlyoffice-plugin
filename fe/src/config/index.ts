@@ -16,7 +16,7 @@ interface AppConfig {
   token?: string // 可选的认证 token
 }
 
-let ip = '192.168.0.121'
+let ip = '192.168.1.30'
 
 // 开发环境配置
 const devConfig: AppConfig = {

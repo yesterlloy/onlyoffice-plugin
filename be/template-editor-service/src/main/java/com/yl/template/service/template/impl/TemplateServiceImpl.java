@@ -39,7 +39,8 @@ public class TemplateServiceImpl implements TemplateService {
 
     @Override
     public void handleOnlyOfficeCallback(Long id, OnlyOfficeCallbackDTO dto) {
-        log.info("收到 OnlyOffice 回调: id={}, status={}", id, dto.getStatus());
+        log.info("=== OnlyOffice Callback 处理开始 === id={}, status={}, key={}, url={}, changesUrl={}, history={}",
+                id, dto.getStatus(), dto.getKey(), dto.getUrl(), dto.getHistory());
 
         // status 2: 文档已准备好保存
         // status 6: 强制保存
@@ -49,21 +50,31 @@ public class TemplateServiceImpl implements TemplateService {
                 log.error("回调处理失败，模板不存在: id={}", id);
                 return;
             }
+            log.info("模板查询成功: id={}, name={}, version={}, ossKey={}", id, entity.getName(), entity.getVersion(), entity.getOssKey());
 
             String downloadUrl = dto.getUrl();
             log.info("开始从 OnlyOffice 下载更新后的文档: {}", downloadUrl);
 
             try {
+                long startTime = System.currentTimeMillis();
                 // 下载文档字节流
                 byte[] content = HttpUtil.downloadBytes(downloadUrl);
+                long downloadTime = System.currentTimeMillis() - startTime;
+
                 if (content == null || content.length == 0) {
-                    log.error("下载文档失败，内容为空: {}", downloadUrl);
+                    log.error("下载文档失败，内容为空: downloadUrl={}, downloadTime={}ms", downloadUrl, downloadTime);
                     return;
                 }
+                log.info("文档下载成功: downloadTime={}ms, contentSize={}bytes", downloadTime, content.length);
 
                 // 上传到 OSS (使用新 key 以保留历史版本或覆盖)
                 String ossKey = generateOssKey(entity.getName(), "docx");
+                log.info("准备上传到 OSS: ossKey={}, fileSize={}bytes", ossKey, content.length);
+
+                long uploadStartTime = System.currentTimeMillis();
                 ossClient.upload(ossKey, content);
+                long uploadTime = System.currentTimeMillis() - uploadStartTime;
+                log.info("OSS上传成功: ossKey={}, uploadTime={}ms", ossKey, uploadTime);
 
                 // 更新实体信息
                 entity.setOssKey(ossKey);
@@ -73,11 +84,14 @@ public class TemplateServiceImpl implements TemplateService {
                 entity.setUpdatedAt(LocalDateTime.now());
 
                 templateFileMapper.updateById(entity);
-                log.info("OnlyOffice 回调处理成功，模板已更新: id={}, version={}", id, entity.getVersion());
+                log.info("=== OnlyOffice Callback 处理完成 === id={}, newVersion={}, ossKey={}, ossUrl={}",
+                        id, entity.getVersion(), ossKey, entity.getOssUrl());
 
             } catch (Exception e) {
-                log.error("OnlyOffice 回调处理异常: id={}, error={}", id, e.getMessage(), e);
+                log.error("OnlyOffice 回调处理异常: id={}, downloadUrl={}, error={}", id, downloadUrl, e.getMessage(), e);
             }
+        } else {
+            log.info("Callback status={}, 跳过保存处理", dto.getStatus());
         }
     }
 
