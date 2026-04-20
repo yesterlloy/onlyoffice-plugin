@@ -24,6 +24,25 @@
     console.log(LOG_PREFIX, '✅', ...args);
   }
 
+  /**
+   * 将 OnlyOffice executeMethod 包装为 Promise
+   * @param {string} method - 方法名
+   * @param {any} params - 参数
+   * @returns {Promise<any>}
+   */
+  function executeMethodPromise(method, params) {
+    return new Promise((resolve) => {
+      try {
+        window.Asc.plugin.executeMethod(method, params, (result) => {
+          resolve(result);
+        });
+      } catch (err) {
+        logError(`Error executing method ${method}:`, err);
+        resolve(null); // Resolve with null on error to prevent hanging
+      }
+    });
+  }
+
   // 正则表达式模式
   const Patterns = {
     // 文本类指标：{{JK4816.get("year")}}
