@@ -317,11 +317,11 @@
     }
   }
 
-  function handleConvertToRaw(startTime) {
-    log('🔄 Converting to raw template...');
+  async function handleConvertToRaw(startTime) {
+    log('🔄 Converting to raw template (async)...');
 
     try {
-      const rawContent = Converter.visualToRaw ? Converter.visualToRaw() : '';
+      const rawContent = Converter.visualToRaw ? await Converter.visualToRaw() : '';
       const elapsed = Date.now() - startTime;
 
       logSuccess('ConvertToRaw complete', { elapsed: elapsed + 'ms' });
@@ -341,12 +341,12 @@
     }
   }
 
-  function handleConvertToVisual(data, startTime) {
-    log('🔄 Converting to visual...');
+  async function handleConvertToVisual(data, startTime) {
+    log('🔄 Converting to visual (async)...');
 
     try {
       if (Converter.rawToVisual) {
-        Converter.rawToVisual(data.indicatorMap || {});
+        await Converter.rawToVisual(data.indicatorMap || {});
       }
       const elapsed = Date.now() - startTime;
 
