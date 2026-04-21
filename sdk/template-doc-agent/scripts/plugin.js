@@ -244,15 +244,16 @@
   }
 
   function handleRemoveIndicator(data, startTime) {
-    log('🗑️ Removing indicator:', data.uid);
+    log('🗑️ Removing indicator (full):', data.InternalId);
 
     try {
-      ContentControl.remove(data.uid);
+      ContentControl.remove(data) 
+
       const elapsed = Date.now() - startTime;
 
-      logSuccess('Remove complete', { uid: data.uid, elapsed: elapsed + 'ms' });
+      logSuccess('Remove complete', { id: data.InternalId, elapsed: elapsed + 'ms' });
       reply('removeDone', {
-        uid: data.uid,
+        uid: data.Tag?.uid,
         elapsed: elapsed,
         timestamp: Date.now()
       });
@@ -260,7 +261,7 @@
     } catch (error) {
       logError('Remove failed:', error.message);
       reply('removeError', {
-        uid: data.uid,
+        uid: data.Tag?.uid,
         error: error.message,
         timestamp: Date.now()
       });

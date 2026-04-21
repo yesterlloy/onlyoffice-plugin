@@ -128,6 +128,7 @@ export function updateTemplate(
     description?: string
     content?: string
     createdBy?: string
+    indicatorMap?: string
   }
 ) {
   return api.updateTemplate(id, data)

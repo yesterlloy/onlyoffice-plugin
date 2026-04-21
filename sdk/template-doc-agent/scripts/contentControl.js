@@ -112,9 +112,9 @@
    * 移除 Content Control
    * @param {string} uid - 标签唯一标识
    */
-  function remove(uid) {
+  function remove(data) {
     log('========== REMOVE START ==========');
-    log('🗑️ UID:', uid);
+    log('🗑️ data.InternalId=====:', data.InternalId);
 
     if (!window.Asc || !window.Asc.plugin) {
       logError('OnlyOffice API not available!');
@@ -123,7 +123,14 @@
 
     log('📡 Calling RemoveContentControl...');
 
-    window.Asc.plugin.executeMethod('RemoveContentControl', [uid]);
+    // 1. 移除 Content Control 控件本身
+      // 使用 InternalId 以确保唯一性
+      window.Asc.plugin.executeMethod('RemoveContentControl', [data.InternalId]);
+
+      // 2. 清除控件内的文本内容
+      // 使用 InputText 将选中的文本（刚才移除控件后会自动选中该区域）替换为空
+      // 这里的 data.Title 通常是显示名称，作为原文本提示
+      window.Asc.plugin.executeMethod('InputText', ['', data.Tag?.text || '']);
 
     logSuccess('Remove API called');
     log('========== REMOVE END ==========');

@@ -22,6 +22,7 @@ interface EditorState {
   documentUrl: string | null
   documentKey: string | null
   documentTitle: string | null
+  templateIndicatorMap: Record<string, any> | null
 
   // Actions
   setCategories: (categories: IndicatorCategory[]) => void
@@ -35,7 +36,7 @@ interface EditorState {
 
   // OnlyOffice 操作（通过 bridge）
   insertIndicatorToOnlyOffice: (indicator: DocTagItem) => Promise<any>
-  removeIndicatorFromOnlyOffice: (uid: string) => Promise<any>
+  removeIndicatorFromOnlyOffice: (tag: DocContentControl) => Promise<any>
   updateIndicatorParams: (uid: string, paramValues: Record<string, any>) => Promise<any>
   getDocTagsFromOnlyOffice: () => Promise<any>
   convertToRawTemplate: () => Promise<any>
@@ -55,6 +56,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   documentUrl: 'http://192.168.1.223:8080/template-editor/files/templates/20260416110039/test.docx',
   documentKey: 'key123',
   documentTitle: 'new.docx',
+  templateIndicatorMap: null,
   callbackUrl: 'http://192.168.1.223:8080/example/api/documents/4/callback',
 
   // Actions
@@ -74,13 +76,33 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   openTemplate: async (templateId: number) => {
     set({ loading: true })
     try {
-      const config = await openDocument({ templateId })
+      const { getTemplateDetail } = await import('@/api')
+      
+      // 并行获取编辑器配置和模板详情（包含之前保存的 indicatorMap）
+      const [config, detail] = await Promise.all([
+        openDocument({ templateId }),
+        getTemplateDetail(templateId)
+      ])
+
+      // 解析从后端返回的映射表
+      let savedMap = null
+      if (detail?.indicatorMap) {
+        try {
+          savedMap = typeof detail.indicatorMap === 'string' 
+            ? JSON.parse(detail.indicatorMap) 
+            : detail.indicatorMap
+        } catch (e) {
+          console.error('Failed to parse saved indicatorMap:', e)
+        }
+      }
+
       set({
         backendConfig: config,
         currentTemplateId: config.templateId,
         documentUrl: config.documentUrl,
         documentKey: config.documentKey,
         documentTitle: config.templateName,
+        templateIndicatorMap: savedMap,
       })
     } catch (error) {
       console.error('Failed to open template:', error)
@@ -130,11 +152,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     }
   },
 
-  removeIndicatorFromOnlyOffice: async (uid) => {
-    console.log('[Store] 🗑️ removeIndicatorFromOnlyOffice START', { uid })
+  removeIndicatorFromOnlyOffice: async (tag) => {
+    console.log('[Store] 🗑️ removeIndicatorFromOnlyOffice START', { tag })
     try {
-      console.log('[Store] 📤 Sending REMOVE_INDICATOR message')
-      const result = await onlyOfficeBridge.send(MESSAGE_TYPES.REMOVE_INDICATOR, { uid })
+      console.log('[Store] 📤 Sending REMOVE_INDICATOR message with full tag data')
+      const result = await onlyOfficeBridge.send(MESSAGE_TYPES.REMOVE_INDICATOR, tag)
       console.log('[Store] ✅ Remove SUCCESS:', result)
       return result
     } catch (error) {
@@ -191,7 +213,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       const { updateTemplate } = await import('@/api')
       await updateTemplate(currentTemplateId, {
         name: documentTitle || 'Untitled',
-        rawContent,
+        content: rawContent,
         indicatorMap: JSON.stringify(indicatorMap)
       })
       console.log('[Store] ✅ Save SUCCESS')

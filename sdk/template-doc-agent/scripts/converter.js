@@ -125,7 +125,10 @@
         // 记录映射关系：表达式 -> 原始元数据
         indicatorMap[expression] = tagData;
         
-        log(`🔄 Replacing CC [${cc.InternalId}] with: ${expression}`);
+        log(`🔄 move to and Replacing CC [${cc.InternalId}] with: ${expression}`);
+
+        // 将光标移动到指定的内容控件。
+        await executeMethodPromise('MoveCursorToContentControl', [cc.InternalId, false])
 
         // 移除控件并输入文本
         let ccPr = await executeMethodPromise('RemoveContentControl', [cc.InternalId]);
@@ -158,55 +161,50 @@
    */
   async function rawToVisual(indicatorMap) {
     log('========== RAW_TO_VISUAL START ==========');
-    Asc.scope.indicatorMap = indicatorMap
-
-    // window.Asc.plugin.executeMethod("SearchAndReplace", [oProperties], function () {
-    //   window.Asc.plugin.executeCommand("close", "");
-    // });
-
-    window.Asc.plugin.callCommand(() => {
-      let oDocument = Api.GetDocument()
-      console.log('Api=', Api)
-      console.log('Asc=', Asc)
-      console.log('oDocument=', oDocument)
-      let reg = /\{\{([A-Z0-9]+)\.get\("([a-zA-Z0-9_]+)"\)\}\}/g
-      oDocument.SearchAndReplace({
-        searchString: reg,
-        replaceString: '',
-        matchCase: true
-      })
-    });
-    return
     
-    let content = await getDocumentPromise() 
-    log('doc==', content)
-    
+    if (!indicatorMap || Object.keys(indicatorMap).length === 0) {
+      log('⚠️ indicatorMap is empty, skipping conversion');
+      return;
+    }
 
-    const expressions = findExpressions(content);
-    log('🔍 Found', expressions.length, 'expressions');
+    // 遍历映射表中的每一个表达式
+    for (const expression in indicatorMap) {
+      const tagData = indicatorMap[expression];
+      log(`🔍 Searching for expression: ${expression}`);
 
-    // 2. 依次处理每个表达式
-    for (const expr of expressions) {
-      const indicatorInfo = indicatorMap[expr.full];
-      if (indicatorInfo) {
-        log('✅ Matching indicator:', indicatorInfo.name, 'for', expr.full);
-        
-        // 查找并选中
-        // 注意：Search 可能返回多个结果，这里简单处理第一个
-        const searchResult = await executeMethodPromise('Search', [{
-          Text: expr.full,
-          MatchCase: true,
-          MatchWholeWord: false
-        }]);
+      // 1. 使用 SearchNext 查找表达式
+      // 注意：同一个表达式可能出现多次，所以使用 while 循环直到找不到为止
+      let found = true;
+      while (found) {
+        let searchResult = window.Asc.plugin.executeMethod('SearchNext', [
+          {
+            "searchString": expression,
+            "matchCase": true
+          },
+          true // Wrap around?
+        ])
+        log('rs====', searchResult)
+        // const searchResult = await executeMethodPromise('SearchNext', [
+        //   {
+        //     "searchString": expression,
+        //     "matchCase": true
+        //   },
+        //   true // Wrap around?
+        // ]);
 
-        if (searchResult && searchResult.length > 0) {
-          log('📍 Expression found at position, replacing with Content Control...');
-          
-          // 选中第一个匹配项
-          await executeMethodPromise('SelectText', [searchResult[0]]);
-          
-          // 创建并插入 Content Control
-          await createContentControlFromExpressionAsync(expr, indicatorInfo);
+        if (searchResult) {
+          log(`📍 Found expression: ${expression}, replacing...`);
+
+          // 2. 使用 InputText 将匹配到的文本替换为空（即删除该文本并保持光标位置）
+          // 第一个参数是替换后的文本，第二个参数是原始文本（用于匹配，但 SearchNext 已经选中了，这里传空即可）
+          await executeMethodPromise('InputText', ['', expression]);
+
+          // 3. 在当前光标位置插入 Content Control 标签
+          // 我们直接使用 ContentControlModule.insert，它内部会调用 InsertAndReplaceContentControls
+          window.ContentControlModule.insert(tagData);
+        } else {
+          log(`🏁 No more occurrences of: ${expression}`);
+          found = false;
         }
       }
     }

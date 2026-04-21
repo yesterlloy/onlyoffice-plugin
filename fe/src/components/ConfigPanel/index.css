@@ -15,8 +15,8 @@
 
 .config-drawer-footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .config-indicator-info {

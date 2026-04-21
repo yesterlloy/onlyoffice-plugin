@@ -243,7 +243,9 @@ const TemplateEditorPage = () => {
   // 转换可视化标签
   const handleConvertToVisual =  () => {
     if(editorReady) {
-      onlyOfficeBridge.send(MESSAGE_TYPES.CONVERT_TO_VISUAL, { id: 1 })
+      const { templateIndicatorMap } = useEditorStore.getState()
+      console.log('Converting to visual with map:', templateIndicatorMap)
+      onlyOfficeBridge.send(MESSAGE_TYPES.CONVERT_TO_VISUAL, { indicatorMap: templateIndicatorMap })
     }
   }
 

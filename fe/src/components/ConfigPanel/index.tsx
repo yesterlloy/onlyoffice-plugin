@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Drawer, Tabs, Form, Input, Select, InputNumber, Switch, Button, message, Divider } from 'antd'
-import { SaveOutlined, RobotOutlined } from '@ant-design/icons'
+import { Drawer, Tabs, Form, Input, Select, InputNumber, Switch, Button, message, Divider, Popconfirm, Space } from 'antd'
+import { SaveOutlined, RobotOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useEditorStore } from '@/stores'
 import { aiPreview } from '@/api'
 import type { IndicatorDetail, IndicatorParam, AiPreviewResult } from '@/types'
@@ -23,6 +23,7 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
     setConfigPanelVisible,
     indicatorMap,
     updateIndicatorParams,
+    removeIndicatorFromOnlyOffice,
   } = useEditorStore()
 
   const [form] = Form.useForm()
@@ -66,6 +67,19 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
       handleClose()
     } catch (error) {
       message.error('保存失败')
+    }
+  }
+
+  // 删除指标
+  const handleDelete = async () => {
+    if (!currentEditingTag) return
+
+    try {
+      await removeIndicatorFromOnlyOffice(currentEditingTag)
+      message.success('指标已删除')
+      handleClose()
+    } catch (error) {
+      message.error('删除失败')
     }
   }
 
@@ -294,10 +308,24 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
       onClose={handleClose}
       footer={
         <div className="config-drawer-footer">
-          <Button onClick={handleClose}>取消</Button>
-          <Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>
-            保存配置
-          </Button>
+          <Popconfirm
+            title="确定要删除该指标吗？"
+            description="删除后将无法恢复，需重新插入。"
+            onConfirm={handleDelete}
+            okText="确定"
+            cancelText="取消"
+            okButtonProps={{ danger: true }}
+          >
+            <Button danger icon={<DeleteOutlined />}>
+              删除指标
+            </Button>
+          </Popconfirm>
+          <Space>
+            <Button onClick={handleClose}>取消</Button>
+            <Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>
+              保存配置
+            </Button>
+          </Space>
         </div>
       }
       className={`config-drawer ${isAi ? 'ai-config' : ''}`}
