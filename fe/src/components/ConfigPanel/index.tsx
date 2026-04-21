@@ -34,16 +34,16 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
   // 当编辑标签变化时，加载参数
   useEffect(() => {
     if (currentEditingTag && configPanelVisible) {
-      const detail = indicatorMap.get(currentEditingTag.indicatorId)
+      const detail = indicatorMap.get(currentEditingTag.Tag.indicatorId)
       setIndicatorDetail(detail || null)
 
       // 填充表单
-      if (currentEditingTag.paramValues) {
-        form.setFieldsValue(currentEditingTag.paramValues)
+      if (currentEditingTag.Tag.paramValues) {
+        form.setFieldsValue(currentEditingTag.Tag.paramValues)
       }
 
       // AI 类型默认显示提示词 Tab
-      if (currentEditingTag.type === 'ai_generate') {
+      if (currentEditingTag.Tag.type === 'ai_generate') {
         setActiveTab('params')
       }
     }
@@ -61,7 +61,7 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
     try {
       const values = await form.validateFields()
       console.log('currentEditingTag', currentEditingTag)
-      await updateIndicatorParams(currentEditingTag.uid, values)
+      await updateIndicatorParams(currentEditingTag.Tag?.uid, values)
       message.success('配置已保存')
       handleClose()
     } catch (error) {
@@ -102,7 +102,7 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
     return null
   }
 
-  const isAi = currentEditingTag.type === 'ai_generate'
+  const isAi = currentEditingTag.Tag?.type === 'ai_generate'
 
   // 渲染参数控件
   const renderParamControl = (param: IndicatorParam) => {
@@ -257,8 +257,8 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
           <Form.Item label="模板表达式">
             <div className="template-expression">
               {isAi
-                ? `{{ai_generate("${currentEditingTag.field}", ...)}}`
-                : `{{${currentEditingTag.code}.get("${currentEditingTag.field}")}}`}
+                ? `{{ai_generate("${currentEditingTag.Tag.field}", ...)}}`
+                : `{{${currentEditingTag.Tag.code}.get("${currentEditingTag.Tag.field}")}}`}
             </div>
           </Form.Item>
           <Form.Item name="cache" label="缓存策略">

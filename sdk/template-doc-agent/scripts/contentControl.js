@@ -61,6 +61,7 @@
       field: data.field,
       name: data.name,
       chartType: data.chartType || null,
+      text: displayTitle,
       paramValues: data.paramValues || {}
     };
 

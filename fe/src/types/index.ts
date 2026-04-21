@@ -59,6 +59,14 @@ export interface DocTagItem {
   type: IndicatorType
   chartType?: ChartType
   paramValues: Record<string, any>
+  text?: string
+}
+
+export interface DocContentControl {
+  Id: string
+  InternalId: string 
+  Lock: 0|1|2|3 //定义是否可以删除和/或编辑内容控件的值：0 - 仅删除，1 - 不可删除或编辑，2 - 仅编辑，3 - 完全访问。
+  Tag: DocTagItem
 }
 
 // 文档段落

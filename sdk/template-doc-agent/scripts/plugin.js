@@ -323,6 +323,10 @@
     try {
       const rawContent = Converter.visualToRaw ? await Converter.visualToRaw() : '';
       const elapsed = Date.now() - startTime;
+      window.Asc.plugin.callCommand(() => {
+        console.log('save=', Api)
+        Api.Save()
+      });
 
       logSuccess('ConvertToRaw complete', { elapsed: elapsed + 'ms' });
       reply('convertDone', {
@@ -342,7 +346,7 @@
   }
 
   async function handleConvertToVisual(data, startTime) {
-    log('🔄 Converting to visual (async)...');
+    log('🔄 Converting to visual (async)... data=', data);
 
     try {
       if (Converter.rawToVisual) {

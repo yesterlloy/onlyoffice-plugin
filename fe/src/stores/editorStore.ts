@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { IndicatorCategory, IndicatorDetail, DocTagItem, EditorConfigVO } from '@/types'
+import type { IndicatorCategory, IndicatorDetail, DocTagItem, EditorConfigVO, DocContentControl } from '@/types'
 import { openDocument } from '@/api'
 import { onlyOfficeBridge, MESSAGE_TYPES } from '@/utils/onlyoffice-bridge'
 
@@ -14,7 +14,7 @@ interface EditorState {
   backendConfig: EditorConfigVO | null
 
   // 当前编辑的标签
-  currentEditingTag: DocTagItem | null
+  currentEditingTag: DocContentControl | null
   configPanelVisible: boolean
 
   // 当前模板信息
@@ -29,7 +29,7 @@ interface EditorState {
   setLoading: (loading: boolean) => void
   setEditorReady: (ready: boolean) => void
   setConfigPanelVisible: (visible: boolean) => void
-  setCurrentEditingTag: (tag: DocTagItem | null) => void
+  setCurrentEditingTag: (tag: DocContentControl | null) => void
   setCurrentTemplate: (id: number, url: string, key: string, title: string) => void
   openTemplate: (templateId: number) => Promise<void>
 

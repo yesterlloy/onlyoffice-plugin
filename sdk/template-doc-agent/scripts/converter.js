@@ -43,6 +43,29 @@
     });
   }
 
+  function getDocumentPromise() {
+    return new Promise((resolve) => {
+      try {
+        //传递参数
+
+        Asc.scope.resolveFn = resolve
+        console.log('Asc.scope.resolveFn obj===', Asc.scope, Asc.scope.resolveFn)
+
+        window.Asc.plugin.callCommand(() => {
+          let oDocument = Api.GetDocument()
+          console.log('Api=', Api)
+          console.log('Asc=', Asc)
+          console.log('rrrrrrr fn=', Asc.scope.resolveFn, Asc.scope)
+          Asc.scope.resolveFn(oDocument);
+        });
+      } catch (err) {
+        logError(`Error executing method ${method}:`, err);
+        resolve(null); // Resolve with null on error to prevent hanging
+      }
+    });
+  }
+
+
   // 正则表达式模式
   const Patterns = {
     // 文本类指标：{{JK4816.get("year")}}
@@ -84,21 +107,25 @@
       return content || '';
     }
 
-    log('📊 Found', controls.length, 'controls for conversion');
+    log('📊 Found', controls.length, 'controls for conversion', this);
 
     // 2. 依次将控件替换为表达式
     // 注意：需要从后往前处理或者确保顺序不影响位置
     // ONLYOFFICE 的 Select + InsertText 比较稳妥
     for (let i = 0; i < controls.length; i++) {
       const cc = controls[i];
+      log('cc111=======', cc)
       try {
         const tagData = JSON.parse(cc.Tag);
         const expression = generateExpression(tagData);
-        log(`🔄 Replacing CC [${cc.Id}] with: ${expression}`);
+        log(`🔄 Replacing CC [${cc.InternalId}] with: ${expression}`);
 
         // 选中并替换
-        await executeMethodPromise('SelectContentControl', [cc.Id]);
-        await executeMethodPromise('InsertText', [expression]);
+        // await executeMethodPromise('SelectContentControl', [cc.InternalId]);
+        // await executeMethodPromise('MoveCursorToContentControl', [cc.InternalId]);
+        let ccPr = await executeMethodPromise('RemoveContentControl', [cc.InternalId]);
+        log('ccPr=', ccPr, tagData)
+        await executeMethodPromise('InputText', [expression, tagData.text || '']);
       } catch (e) {
         logError(`Failed to process control ${cc.Id}:`, e.message);
       }
@@ -110,10 +137,10 @@
     log('📥 Raw content captured, length:', rawContent ? rawContent.length : 0);
 
     // 4. 恢复文档 (Undo 之前的 N 次操作)
-    log('⏪ Restoring document via Undo...');
-    for (let i = 0; i < controls.length; i++) {
-      await executeMethodPromise('Undo', []);
-    }
+    // log('⏪ Restoring document via Undo...');
+    // for (let i = 0; i < controls.length; i++) {
+    //   await executeMethodPromise('Undo', []);
+    // }
 
     logSuccess('visualToRaw complete');
     log('========== VISUAL_TO_RAW END ==========');
@@ -129,13 +156,29 @@
    */
   async function rawToVisual(indicatorMap) {
     log('========== RAW_TO_VISUAL START ==========');
+    Asc.scope.indicatorMap = indicatorMap
+
+    // window.Asc.plugin.executeMethod("SearchAndReplace", [oProperties], function () {
+    //   window.Asc.plugin.executeCommand("close", "");
+    // });
+
+    window.Asc.plugin.callCommand(() => {
+      let oDocument = Api.GetDocument()
+      console.log('Api=', Api)
+      console.log('Asc=', Asc)
+      console.log('oDocument=', oDocument)
+      let reg = /\{\{([A-Z0-9]+)\.get\("([a-zA-Z0-9_]+)"\)\}\}/g
+      oDocument.SearchAndReplace({
+        searchString: reg,
+        replaceString: '',
+        matchCase: true
+      })
+    });
+    return
     
-    // 1. 获取文档全文并查找所有表达式
-    const content = await executeMethodPromise('GetDocumentContent', []);
-    if (!content) {
-      logError('No document content');
-      return;
-    }
+    let content = await getDocumentPromise() 
+    log('doc==', content)
+    
 
     const expressions = findExpressions(content);
     log('🔍 Found', expressions.length, 'expressions');

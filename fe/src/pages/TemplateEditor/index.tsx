@@ -103,6 +103,9 @@ const TemplateEditorPage = () => {
     // 标签点击
     const handleTagClicked = (data: any) => {
       console.log('[TemplateEditor] Tag clicked message received:', data)
+      if(typeof data.Tag === 'string') {
+        data.Tag = JSON.parse(data.Tag)
+      }
       setCurrentEditingTag(data)
       setConfigPanelVisible(true)
     }
@@ -233,6 +236,13 @@ const TemplateEditorPage = () => {
     }
   }
 
+  // 转换可视化标签
+  const handleConvertToVisual =  () => {
+    if(editorReady) {
+      onlyOfficeBridge.send(MESSAGE_TYPES.CONVERT_TO_VISUAL, { id: 1 })
+    }
+  }
+
   // 获取文档标签
   const handleGetTags = async () => {
     if (editorReady) {
@@ -264,8 +274,11 @@ const TemplateEditorPage = () => {
             <Button icon={<EyeOutlined />} onClick={handleGetTags} disabled={!editorReady}>
               查看标签
             </Button>
+            <Button type="primary" icon={<SaveOutlined />} onClick={handleConvertToVisual} disabled={!editorReady}>
+              转换标签 
+            </Button>
             <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveTemplate} disabled={!editorReady}>
-              保存模板
+              转换模板
             </Button>
           </Space>
         </div>
