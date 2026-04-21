@@ -39,9 +39,10 @@ interface EditorState {
   updateIndicatorParams: (uid: string, paramValues: Record<string, any>) => Promise<any>
   getDocTagsFromOnlyOffice: () => Promise<any>
   convertToRawTemplate: () => Promise<any>
+  saveTemplate: (rawContent: string, indicatorMap: Record<string, any>) => Promise<void>
 }
 
-export const useEditorStore = create<EditorState>((set) => ({
+export const useEditorStore = create<EditorState>((set, get) => ({
   // 初始状态
   categories: [],
   indicatorMap: new Map(),
@@ -175,6 +176,27 @@ export const useEditorStore = create<EditorState>((set) => ({
       return result
     } catch (error) {
       console.error('[Store] Convert to raw failed:', error)
+      throw error
+    }
+  },
+
+  saveTemplate: async (rawContent, indicatorMap) => {
+    const { currentTemplateId, documentTitle } = get()
+    if (!currentTemplateId) {
+      console.error('[Store] ❌ No currentTemplateId')
+      return
+    }
+
+    try {
+      const { updateTemplate } = await import('@/api')
+      await updateTemplate(currentTemplateId, {
+        name: documentTitle || 'Untitled',
+        rawContent,
+        indicatorMap: JSON.stringify(indicatorMap)
+      })
+      console.log('[Store] ✅ Save SUCCESS')
+    } catch (error) {
+      console.error('[Store] ❌ Save FAILED:', error)
       throw error
     }
   },

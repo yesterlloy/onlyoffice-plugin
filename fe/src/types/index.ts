@@ -84,6 +84,8 @@ export interface TemplateFile {
   name: string
   description?: string
   ossUrl: string
+  rawContent?: string
+  indicatorMap?: Record<string, any>
   fileSize?: number
   version: number
   status: number

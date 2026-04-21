@@ -26,6 +26,10 @@ public class TemplateFile implements Serializable {
 
     private String ossUrl;
 
+    private String rawContent;
+
+    private String indicatorMap;
+
     private Long fileSize;
 
     private Integer version;

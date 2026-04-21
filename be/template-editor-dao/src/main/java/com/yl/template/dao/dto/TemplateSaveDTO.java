@@ -17,6 +17,10 @@ public class TemplateSaveDTO implements Serializable {
 
     private String content;
 
+    private String rawContent;
+
+    private String indicatorMap;
+
     private String createdBy;
 
     private java.util.List<IndicatorTagDTO> indicators;

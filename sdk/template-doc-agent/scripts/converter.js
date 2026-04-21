@@ -89,12 +89,14 @@
 
   /**
    * 可视化 → 原始转换 (Async)
-   * 将 Content Control 转换为模板语法
+   * 将 Content Control 转换为模板语法，并收集指标映射关系
    *
-   * @returns {Promise<string>} - 原始模板内容
+   * @returns {Promise<Object>} - { rawContent: string, indicatorMap: Object }
    */
   async function visualToRaw() {
     log('========== VISUAL_TO_RAW START ==========');
+
+    const indicatorMap = {};
 
     // 1. 获取所有 Content Control
     log('📋 Calling GetAllContentControls...');
@@ -104,30 +106,33 @@
       log('⚠️ No ContentControls found, fetching document content directly');
       const content = await executeMethodPromise('GetDocumentContent', []);
       logSuccess('visualToRaw complete (no tags)');
-      return content || '';
+      return {
+        rawContent: content || '',
+        indicatorMap: {}
+      };
     }
 
     log('📊 Found', controls.length, 'controls for conversion', this);
 
-    // 2. 依次将控件替换为表达式
-    // 注意：需要从后往前处理或者确保顺序不影响位置
-    // ONLYOFFICE 的 Select + InsertText 比较稳妥
+    // 2. 依次将控件替换为表达式，并收集映射
     for (let i = 0; i < controls.length; i++) {
       const cc = controls[i];
       log('cc111=======', cc)
       try {
         const tagData = JSON.parse(cc.Tag);
         const expression = generateExpression(tagData);
+        
+        // 记录映射关系：表达式 -> 原始元数据
+        indicatorMap[expression] = tagData;
+        
         log(`🔄 Replacing CC [${cc.InternalId}] with: ${expression}`);
 
-        // 选中并替换
-        // await executeMethodPromise('SelectContentControl', [cc.InternalId]);
-        // await executeMethodPromise('MoveCursorToContentControl', [cc.InternalId]);
+        // 移除控件并输入文本
         let ccPr = await executeMethodPromise('RemoveContentControl', [cc.InternalId]);
         log('ccPr=', ccPr, tagData)
         await executeMethodPromise('InputText', [expression, tagData.text || '']);
       } catch (e) {
-        logError(`Failed to process control ${cc.Id}:`, e.message);
+        logError(`Failed to process control ${cc.InternalId}:`, e.message);
       }
     }
 
@@ -136,16 +141,13 @@
     const rawContent = await executeMethodPromise('GetDocumentContent', []);
     log('📥 Raw content captured, length:', rawContent ? rawContent.length : 0);
 
-    // 4. 恢复文档 (Undo 之前的 N 次操作)
-    // log('⏪ Restoring document via Undo...');
-    // for (let i = 0; i < controls.length; i++) {
-    //   await executeMethodPromise('Undo', []);
-    // }
-
     logSuccess('visualToRaw complete');
     log('========== VISUAL_TO_RAW END ==========');
 
-    return rawContent || '';
+    return {
+      rawContent: rawContent || '',
+      indicatorMap: indicatorMap
+    };
   }
 
   /**

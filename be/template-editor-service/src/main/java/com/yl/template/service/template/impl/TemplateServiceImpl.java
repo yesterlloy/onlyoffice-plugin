@@ -126,6 +126,8 @@ public class TemplateServiceImpl implements TemplateService {
         entity.setStatus(1);
         entity.setCreatedBy(dto.getCreatedBy());
         entity.setCreatedAt(LocalDateTime.now());
+        entity.setRawContent(dto.getRawContent());
+        entity.setIndicatorMap(dto.getIndicatorMap());
 
         // 上传模板内容到 OSS，为空时使用 name 作为默认值
         String content = StringUtils.isBlank(dto.getContent()) ? dto.getName() : dto.getContent();
@@ -153,6 +155,8 @@ public class TemplateServiceImpl implements TemplateService {
         entity.setDescription(dto.getDescription());
         entity.setUpdatedBy(dto.getCreatedBy());
         entity.setUpdatedAt(LocalDateTime.now());
+        entity.setRawContent(dto.getRawContent());
+        entity.setIndicatorMap(dto.getIndicatorMap());
 
         // 如果有新内容，上传到 OSS
         String newContent = StringUtils.trimToEmpty(dto.getContent());
@@ -258,6 +262,8 @@ public class TemplateServiceImpl implements TemplateService {
         vo.setName(entity.getName());
         vo.setDescription(entity.getDescription());
         vo.setOssUrl(entity.getOssUrl());
+        vo.setRawContent(entity.getRawContent());
+        vo.setIndicatorMap(entity.getIndicatorMap());
         vo.setFileSize(entity.getFileSize());
         vo.setVersion(entity.getVersion());
         vo.setStatus(entity.getStatus());

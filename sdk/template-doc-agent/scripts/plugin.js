@@ -321,8 +321,10 @@
     log('🔄 Converting to raw template (async)...');
 
     try {
-      const rawContent = Converter.visualToRaw ? await Converter.visualToRaw() : '';
+      // visualToRaw 现在返回 { rawContent, indicatorMap }
+      const result = Converter.visualToRaw ? await Converter.visualToRaw() : { rawContent: '', indicatorMap: {} };
       const elapsed = Date.now() - startTime;
+      
       window.Asc.plugin.callCommand(() => {
         console.log('save=', Api)
         Api.Save()
@@ -330,7 +332,8 @@
 
       logSuccess('ConvertToRaw complete', { elapsed: elapsed + 'ms' });
       reply('convertDone', {
-        content: rawContent,
+        content: result.rawContent,
+        indicatorMap: result.indicatorMap,
         direction: 'toRaw',
         elapsed: elapsed,
         timestamp: Date.now()

@@ -224,14 +224,18 @@ const TemplateEditorPage = () => {
 
   // 保存模板（转换为原始模板）
   const handleSaveTemplate = async () => {
-    if (editorReady) {
+    if (editorReady && currentTemplateId) {
       try {
         const result = await convertToRawTemplate()
-        console.log('Raw template:', result)
-        message.success('模板转换完成')
-        // TODO: 提交到后端保存
+        console.log('Conversion result:', result)
+        
+        // 提交到后端保存
+        await useEditorStore.getState().saveTemplate(result.content, result.indicatorMap)
+        
+        message.success('模板转换并保存成功')
       } catch (error) {
-        message.error('转换失败')
+        console.error('保存失败:', error)
+        message.error('保存失败')
       }
     }
   }
