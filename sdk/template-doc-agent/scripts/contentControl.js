@@ -78,11 +78,11 @@
         Appearance: 1  // 1 - 标签
       },
       Script: `
-        var oParagraph = Api.CreateParagraph();
-        oParagraph.AddText("${displayTitle}");
-        oParagraph.SetColor("${style.color}");
-        oParagraph.SetBold(true);
-        Api.GetDocument().InsertContent([oParagraph]);
+        var oRun = Api.CreateRun();
+        oRun.AddText("${displayTitle}");
+        oRun.SetColor("${style.color}");
+        oRun.SetBold(true);
+        Api.GetDocument().InsertContent([oRun]);
       `
     };
 

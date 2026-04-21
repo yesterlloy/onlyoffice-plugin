@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Input, Tree, Tag, Typography, Button, Tooltip } from 'antd'
 import { SearchOutlined, DatabaseOutlined, PlusOutlined } from '@ant-design/icons'
-import { useDraggable } from '@dnd-kit/core'
 import type { IndicatorCategory, IndicatorMetadata, IndicatorType } from '@/types'
 import type { TreeDataNode } from 'antd'
 import './index.css'
@@ -35,17 +34,14 @@ const typeLabels: Record<IndicatorType, string> = {
 interface DraggableIndicatorProps {
   indicator: IndicatorMetadata
   onInsert?: (indicator: IndicatorMetadata) => void
+  onDragStart?: (uid: string, indicator: IndicatorMetadata) => void
+  onDragEnd?: (uid: string, indicator: IndicatorMetadata) => void
 }
 
 // 可拖拽的指标项
-const DraggableIndicator = ({ indicator, onInsert }: DraggableIndicatorProps) => {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `indicator-${indicator.indicatorId}`,
-    data: {
-      type: 'indicator',
-      indicator,
-    },
-  })
+const DraggableIndicator = ({ indicator, onInsert, onDragStart, onDragEnd }: DraggableIndicatorProps) => {
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragUid, setDragUid] = useState('')
 
   const handleInsert = (e: React.MouseEvent) => {
     e.stopPropagation()  // 阻止事件冒泡
@@ -54,13 +50,33 @@ const DraggableIndicator = ({ indicator, onInsert }: DraggableIndicatorProps) =>
     onInsert?.(indicator)
   }
 
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    const uid = Date.now().toString()
+    setDragUid(uid)
+    setIsDragging(true)
+    
+    // 设置原生拖放数据，当拖入 OnlyOffice 编辑器时，会自动插入这段文本
+    e.dataTransfer.setData('text/plain', `[[TAG_${uid}]]`)
+    e.dataTransfer.effectAllowed = 'copy'
+    
+    onDragStart?.(uid, indicator)
+  }
+
+  const handleDragEnd = (_e: React.DragEvent<HTMLDivElement>) => {
+    setIsDragging(false)
+    if (dragUid) {
+      onDragEnd?.(dragUid, indicator)
+    }
+  }
+
   return (
     <div
-      ref={setNodeRef}
       className={`indicator-item ${isDragging ? 'dragging' : ''}`}
+      draggable={true}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
-      {/* 拖拽手柄 - 只在这里绑定 listeners */}
-      <div className="indicator-drag-handle" {...listeners} {...attributes}>
+      <div className="indicator-drag-handle">
         <span className="indicator-item-drag">⠿</span>
       </div>
 
@@ -92,9 +108,10 @@ const DraggableIndicator = ({ indicator, onInsert }: DraggableIndicatorProps) =>
 interface IndicatorPanelProps {
   categories: IndicatorCategory[]
   onIndicatorInsert?: (indicator: IndicatorMetadata) => void
+  onIndicatorDrop?: (uid: string, indicator: IndicatorMetadata) => void
 }
 
-const IndicatorPanel = ({ categories, onIndicatorInsert }: IndicatorPanelProps) => {
+const IndicatorPanel = ({ categories, onIndicatorInsert, onIndicatorDrop }: IndicatorPanelProps) => {
   const [searchText, setSearchText] = useState('')
   const [expandedKeys, setExpandedKeys] = useState<string[]>(categories.map((c) => `cat-${c.id}`))
 
@@ -126,7 +143,13 @@ const IndicatorPanel = ({ categories, onIndicatorInsert }: IndicatorPanelProps) 
     ),
     children: cat.indicators.map((ind) => ({
       key: `ind-${ind.indicatorId}`,
-      title: <DraggableIndicator indicator={ind} onInsert={onIndicatorInsert} />,
+      title: (
+        <DraggableIndicator 
+          indicator={ind} 
+          onInsert={onIndicatorInsert} 
+          onDragEnd={onIndicatorDrop} 
+        />
+      ),
       isLeaf: true,
     })),
   }))
