@@ -184,6 +184,7 @@ class OnlyOfficeBridge {
     const responseMap: Record<string, string> = {
       insertIndicator: 'insertDone',
       removeIndicator: 'removeDone',
+      replaceDroppedIndicator: 'replaceDone',
       updateParams: 'updateDone',
       getDocTags: 'allTags',
       convertToRaw: 'convertDone',
