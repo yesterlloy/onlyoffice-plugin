@@ -67,7 +67,7 @@
 
     const tagJson = JSON.stringify(tagData);
     log('📦 Tag metadata:', tagJson);
-    log('📦 Tag size:', tagJson.length, 'bytes');
+    log('📦 Tag size:11111', tagJson.length, 'bytes', style.color);
 
     // 构建 Content Control 配置
     const ccConfig = {
@@ -78,11 +78,10 @@
         Appearance: 1  // 1 - 标签
       },
       Script: `
-        var oRun = Api.CreateRun();
-        oRun.AddText("${displayTitle}");
-        oRun.SetColor("${style.color}");
-        oRun.SetBold(true);
-        Api.GetDocument().InsertContent([oRun]);
+        var oParagraph = Api.CreateParagraph();
+        oParagraph.AddText("${displayTitle}");
+
+        Api.GetDocument().InsertContent([oParagraph], true, {"KeepTextOnly": true});
       `
     };
 

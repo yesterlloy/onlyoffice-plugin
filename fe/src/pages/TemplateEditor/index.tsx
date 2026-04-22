@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Layout, Spin, Button, message, Space, Empty } from 'antd'
 import { SaveOutlined, EyeOutlined } from '@ant-design/icons'
-import { DndContext, DragEndEvent, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useEditorStore } from '@/stores'
 import { getIndicatorCategories, getIndicatorDetail } from '@/api'
@@ -52,8 +51,6 @@ const TemplateEditorPage = () => {
     openTemplate,
     backendConfig,
   } = useEditorStore()
-
-  const [activeId, setActiveId] = useState<string | null>(null)
 
   // 页面加载时根据 URL 参数打开模板
   useEffect(() => {
@@ -133,43 +130,29 @@ const TemplateEditorPage = () => {
     }
   }, [setCurrentEditingTag, setConfigPanelVisible, setEditorReady])
 
-  // 处理拖拽开始
-  const handleDragStart = (event: DragEndEvent) => {
-    console.log('[Drag] 🎯 DRAG START', {
-      activeId: event.active.id,
-      activeData: event.active.data.current,
-      timestamp: new Date().toISOString()
-    })
-    setActiveId(event.active.id as string)
-  }
-
-  // 处理拖拽结束（页面级别的 DndContext）
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-
-    console.log('[Drag] 🎯 DRAG END', {
-      activeId: active.id,
-      activeData: active.data.current,
-      overId: over?.id,
-      overData: over?.data.current,
-      timestamp: new Date().toISOString()
-    })
-
-    setActiveId(null)
-
-    if (!over) {
-      console.log('[Drag] ⚠️ No drop target, drag cancelled')
-      return
+  // 处理指标放置到文档内占位符（由 IndicatorPanel 触发）
+  const handleDropIndicator = async (uid: string, indicator: IndicatorMetadata) => {
+    if (!editorReady) return;
+    try {
+      const detail = indicatorMap.get(indicator.indicatorId);
+      const paramValues = detail ? getDefaultParamValues(detail) : {};
+      const tagItem = {
+        uid: '',
+        indicatorId: indicator.indicatorId,
+        code: indicator.code,
+        field: indicator.field,
+        name: indicator.name,
+        type: indicator.type,
+        chartType: indicator.chartType,
+        paramValues,
+      };
+      await useEditorStore.getState().replaceDroppedIndicatorInOnlyOffice(uid, tagItem);
+      message.success(`已插入「${indicator.name}」`);
+    } catch (error) {
+      console.error('Drop failed:', error);
+      message.error('插入失败');
     }
-
-    // 检查是否拖拽到文档区域（由 IndicatorPanel 内部的 DndContext 处理）
-    const indicatorData = active.data.current
-
-    if (indicatorData?.type === 'indicator' && editorReady) {
-      const indicator = indicatorData.indicator as IndicatorMetadata
-      handleInsertIndicator(indicator)
-    }
-  }
+  };
 
   // 处理指标插入
   const handleInsertIndicator = async (indicator: IndicatorMetadata) => {
@@ -263,82 +246,68 @@ const TemplateEditorPage = () => {
   }
 
   return (
-    <DndContext
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      collisionDetection={closestCenter}
-    >
-      <Layout className="template-editor-layout">
-        {/* 顶部工具栏 */}
-        <Header className="editor-header">
-          <Toolbar />
-        </Header>
+    <Layout className="template-editor-layout">
+      {/* 顶部工具栏 */}
+      <Header className="editor-header">
+        <Toolbar />
+      </Header>
 
-        {/* 次级工具栏：操作按钮 */}
-        <div className="editor-toolbar-secondary">
-          <Space>
-            <Button icon={<EyeOutlined />} onClick={handleGetTags} disabled={!editorReady}>
-              查看标签
-            </Button>
-            <Button type="primary" icon={<SaveOutlined />} onClick={handleConvertToVisual} disabled={!editorReady}>
-              转换标签 
-            </Button>
-            <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveTemplate} disabled={!editorReady}>
-              转换模板
-            </Button>
-          </Space>
-        </div>
+      {/* 次级工具栏：操作按钮 */}
+      <div className="editor-toolbar-secondary">
+        <Space>
+          <Button icon={<EyeOutlined />} onClick={handleGetTags} disabled={!editorReady}>
+            查看标签
+          </Button>
+          <Button type="primary" icon={<SaveOutlined />} onClick={handleConvertToVisual} disabled={!editorReady}>
+            转换标签 
+          </Button>
+          <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveTemplate} disabled={!editorReady}>
+            转换模板
+          </Button>
+        </Space>
+      </div>
 
-        <Layout>
-          {/* 左侧指标库面板 */}
-          <Sider width={280} className="indicator-sider" theme="light">
-            {loading ? (
-              <div className="loading-container">
-                <Spin tip="加载中..." />
+      <Layout>
+        {/* 左侧指标库面板 */}
+        <Sider width={280} className="indicator-sider" theme="light">
+          {loading ? (
+            <div className="loading-container">
+              <Spin tip="加载中..." />
+            </div>
+          ) : (
+            <IndicatorPanel
+              categories={categories}
+              onIndicatorInsert={handleInsertIndicator}
+              onIndicatorDrop={handleDropIndicator}
+            />
+          )}
+        </Sider>
+
+        {/* 中间文档编辑区 */}
+        <Content className="editor-content">
+          {documentUrl ? (
+            <OnlyOfficeEditor
+              documentId={currentTemplateId?.toString() || ''}
+              documentUrl={documentUrl}
+              documentKey={documentKey!}
+              documentTitle={documentTitle!}
+              configVO={backendConfig}
+            />
+          ) : (
+
+              <div className="editor-placeholder">
+                <Empty description="请先从模板管理页面选择模板进行配置" />
+                <Button type="primary" onClick={() => navigate('/')}>
+                  前往模板管理
+                </Button>
               </div>
-            ) : (
-              <IndicatorPanel
-                categories={categories}
-                onIndicatorInsert={handleInsertIndicator}
-              />
-            )}
-          </Sider>
+          )}
+        </Content>
 
-          {/* 中间文档编辑区 */}
-          <Content className="editor-content">
-            {documentUrl ? (
-              <OnlyOfficeEditor
-                documentId={currentTemplateId?.toString() || ''}
-                documentUrl={documentUrl}
-                documentKey={documentKey!}
-                documentTitle={documentTitle!}
-                configVO={backendConfig}
-              />
-            ) : (
-
-                <div className="editor-placeholder">
-                  <Empty description="请先从模板管理页面选择模板进行配置" />
-                  <Button type="primary" onClick={() => navigate('/')}>
-                    前往模板管理
-                  </Button>
-                </div>
-            )}
-          </Content>
-
-          {/* 右侧配置面板 */}
-          <ConfigPanel />
-        </Layout>
+        {/* 右侧配置面板 */}
+        <ConfigPanel />
       </Layout>
-
-      {/* 拖拽预览层 */}
-      <DragOverlay>
-        {activeId && (
-          <div className="drag-overlay-item">
-            拖拽中...
-          </div>
-        )}
-      </DragOverlay>
-    </DndContext>
+    </Layout>
   )
 }
 

@@ -90,6 +90,11 @@
         handleConvertToVisual(data, startTime);
         break;
 
+      case 'replaceDroppedIndicator':
+        log('🎯 Handling: replaceDroppedIndicator');
+        handleReplaceDroppedIndicator(data, startTime);
+        break;
+
       default:
         logError('Unknown message type:', msg.type);
     }
@@ -168,24 +173,34 @@
     try {
       if (window.Asc.plugin.attachEditorEvent) {
         // 监听焦点进入 Content Control
-         window.Asc.plugin.attachEditorEvent("onFocusContentControl", function(control) {
-          log('🖱️ EditorEvent: onFocusContentControl', control);
-          if (control && control.InternalId) {
-            onTargetControlClick(control);
-          }
-        });
+        //  window.Asc.plugin.attachEditorEvent("onFocusContentControl", function(control) {
+        //   log('🖱️ EditorEvent: onFocusContentControl', control);
+        //   if (control && control.InternalId) {
+        //     onTargetControlClick(control);
+        //   }
+        // });
 
         // 监听点击事件作为兜底
-        // window.Asc.plugin.attachEditorEvent("onClick", function() {
-        //   log('🖱️ EditorEvent: onClick');
-        //   // 点击时尝试获取当前选中的 Content Control
-        //   window.Asc.plugin.executeMethod('GetCurrentContentControl', [null], function(internalId) {
-        //     console.log('GetCurrentContentControl:', internalId)
-        //     if (internalId) {
-        //       onTargetControlClick(internalId);
-        //     }
-        //   });
-        // });
+        window.Asc.plugin.attachEditorEvent("onClick", function() {
+          log('🖱️ EditorEvent: onClick 11111');
+          window.Asc.plugin.executeMethod("GetCurrentContentControl", null, function (internalId) {
+            console.log('current id', internalId)
+            // 点击对象不是ContentControl
+            if(!internalId) {
+              return
+            }
+
+            window.Asc.plugin.executeMethod('GetAllContentControls', null, function (data) {
+              console.log('GetAllContentControls data:', internalId, data)
+              for (var i = 0; i < data.length; i++) {
+                if (data[i].InternalId == internalId) {
+                  onTargetControlClick(data[i]);
+                  break;
+                }
+              }
+            });
+          });
+        });
         
         // log('✅ attachEditorEvent listeners initialized');
       }
@@ -350,7 +365,7 @@
   }
 
   async function handleConvertToVisual(data, startTime) {
-    log('🔄 Converting to visual (async)... data=', data);
+    log('🔄 Converting to visual (async)... data11111=', data);
 
     try {
       if (Converter.rawToVisual) {
@@ -372,6 +387,51 @@
         timestamp: Date.now()
       });
     }
+  }
+
+  /**
+   * 处理替换拖拽占位符的消息
+   * 
+   * @param {Object} data - { dropUid: string, indicatorData: Object }
+   * @param {number} startTime - 开始处理的时间戳
+   */
+  function handleReplaceDroppedIndicator(data, startTime) {
+    log('🔄 Replacing dropped indicator (delayed)...111', data.dropUid);
+
+    // 延迟 300ms 等待本地拖拽输入操作完成（由 SDK 触发的文字插入）
+    setTimeout(async () => {
+      try {
+        if (!Converter.replaceDroppedPlaceholder) {
+          throw new Error('Converter.replaceDroppedPlaceholder not found');
+        }
+
+        const success = await Converter.replaceDroppedPlaceholder(data.dropUid, data.indicator);
+        
+        if (!success) {
+          log('⚠️ Placeholder not found, falling back to direct insertion at cursor');
+          // 兜底方案：直接在当前光标位置插入
+          ContentControl.insert(data.indicator);
+        }
+
+        const elapsed = Date.now() - startTime;
+        logSuccess('Replace operation finished', { dropUid: data.dropUid, success, elapsed: elapsed + 'ms' });
+        
+        reply('replaceDone', {
+          dropUid: data.dropUid,
+          success: true, // 即使是兜底插入也算成功
+          elapsed: elapsed,
+          timestamp: Date.now()
+        });
+
+      } catch (error) {
+        logError('Replace failed:', error.message);
+        reply('replaceError', {
+          dropUid: data.dropUid,
+          error: error.message,
+          timestamp: Date.now()
+        });
+      }
+    }, 300);
   }
 
   // ========== 回复函数 - 根据来源选择方式 ==========
@@ -452,6 +512,7 @@
     handleGetDocTags,
     handleConvertToRaw,
     handleConvertToVisual,
+    handleReplaceDroppedIndicator,
     log,
     reply,
     // 测试方法

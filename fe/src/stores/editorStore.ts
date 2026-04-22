@@ -36,6 +36,7 @@ interface EditorState {
 
   // OnlyOffice 操作（通过 bridge）
   insertIndicatorToOnlyOffice: (indicator: DocTagItem) => Promise<any>
+  replaceDroppedIndicatorInOnlyOffice: (dropUid: string, indicator: DocTagItem) => Promise<any>
   removeIndicatorFromOnlyOffice: (tag: DocContentControl) => Promise<any>
   updateIndicatorParams: (uid: string, paramValues: Record<string, any>) => Promise<any>
   getDocTagsFromOnlyOffice: () => Promise<any>
@@ -148,6 +149,31 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       return result
     } catch (error) {
       console.error('[Store] ❌ insertIndicatorToOnlyOffice FAILED:', error)
+      throw error
+    }
+  },
+
+  replaceDroppedIndicatorInOnlyOffice: async (dropUid, indicator) => {
+    console.log('[Store] 🚀 replaceDroppedIndicatorInOnlyOffice START', { dropUid, indicator })
+    try {
+      const messageData = {
+        dropUid,
+        indicator: {
+          uid: indicator.uid || `tag_${Date.now()}`,
+          indicatorId: indicator.indicatorId,
+          code: indicator.code,
+          field: indicator.field,
+          name: indicator.name,
+          type: indicator.type,
+          chartType: indicator.chartType,
+          paramValues: indicator.paramValues || {},
+        }
+      }
+      const result = await onlyOfficeBridge.send(MESSAGE_TYPES.REPLACE_DROPPED_INDICATOR, messageData)
+      console.log('[Store] ✅ replaceDroppedIndicator SUCCESS:', result)
+      return result
+    } catch (error) {
+      console.error('[Store] ❌ replaceDroppedIndicator FAILED:', error)
       throw error
     }
   },

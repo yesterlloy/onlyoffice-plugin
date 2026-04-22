@@ -214,6 +214,45 @@
   }
 
   /**
+   * 替换拖拽时插入的占位符文本为 Content Control
+   * @param {string} dropUid - 占位符 ID
+   * @param {Object} indicatorData - 指标数据
+   */
+  async function replaceDroppedPlaceholder(dropUid, indicatorData) {
+    log('========== REPLACE_DROPPED_PLACEHOLDER START ==========');
+    const searchString = `[[TAG_${dropUid}]]`;
+    log(`🔍 Searching for dropped placeholder: ${searchString}`);
+
+    try {
+      // 使用 SearchNext 查找并自动选中占位符 (参考 rawToVisual 逻辑)
+      const searchResult = window.Asc.plugin.executeMethod('SearchNext', [
+        {
+          "searchString": searchString,
+          "matchCase": true
+        },
+        true // Wrap around?
+      ]);
+
+      if (searchResult) {
+        log(`📍 Found placeholder via SearchNext, replacing...`);
+        
+        // 使用 InputText 将选中的文本替换为空
+        await executeMethodPromise('InputText', ['', searchString]);
+      }
+      // 插入可视化标签
+      window.ContentControlModule.insert(indicatorData);
+
+      logSuccess('replaceDroppedPlaceholder complete');
+      return true;
+    } catch (error) {
+      logError(`Error during placeholder search:`, error.message);
+    }
+
+    log('⚠️ Placeholder not found via SearchNext');
+    return false;
+  }
+
+  /**
    * 异步创建 Content Control
    */
   async function createContentControlFromExpressionAsync(expr, indicatorInfo) {
@@ -379,6 +418,7 @@
   window.ConverterModule = {
     visualToRaw: visualToRaw,
     rawToVisual: rawToVisual,
+    replaceDroppedPlaceholder: replaceDroppedPlaceholder,
     generateExpression: generateExpression,
     findExpressions: findExpressions,
     Patterns: Patterns

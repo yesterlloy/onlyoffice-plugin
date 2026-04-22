@@ -274,6 +274,7 @@ export const MESSAGE_TYPES = {
   // 前端 → 插件
   INSERT_INDICATOR: 'insertIndicator',
   REMOVE_INDICATOR: 'removeIndicator',
+  REPLACE_DROPPED_INDICATOR: 'replaceDroppedIndicator',
   UPDATE_PARAMS: 'updateParams',
   GET_DOC_TAGS: 'getDocTags',
   CONVERT_TO_RAW: 'convertToRaw',
