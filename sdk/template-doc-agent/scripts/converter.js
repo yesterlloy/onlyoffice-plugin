@@ -88,6 +88,75 @@
   };
 
   /**
+   * 处理循环区域（通过批注标记）
+   * 
+   * 查找所有以 "循环区域：" 开头的批注：
+   * 1. 获取批注范围
+   * 2. 标记范围内的所有内容控件为 isInLoop: true
+   * 3. 在范围开始处插入 {{?JK...}}，在结尾处插入 {{/}}
+   * 4. 移除该批注
+   * 
+   * @returns {Promise<number>} - 处理的循环区域数量
+   */
+  function processLoopRegions() {
+    log('🔄 Processing Loop Regions...');
+    return new Promise((resolve) => {
+      try {
+        Asc.scope.resolveLoop = resolve;
+        window.Asc.plugin.callCommand(() => {
+          const oDocument = Api.GetDocument();
+          const aComments = oDocument.GetAllComments();
+          const loopPrefix = "循环区域：";
+          let count = 0;
+
+          for (let i = 0; i < aComments.length; i++) {
+            const oComment = aComments[i];
+            const sText = oComment.GetText();
+
+            if (sText && sText.indexOf(loopPrefix) === 0) {
+              const indicatorName = sText.substring(loopPrefix.length).trim();
+              const oRange = oComment.GetRange();
+
+              // 1. 标记该范围内的内容控件
+              const aContentControls = oRange.GetContentControls();
+              for (let j = 0; j < aContentControls.length; j++) {
+                const oCC = aContentControls[j];
+                const sTag = oCC.GetTag();
+                try {
+                  const tagData = JSON.parse(sTag);
+                  tagData.isInLoop = true;
+                  oCC.SetTag(JSON.stringify(tagData));
+                } catch (e) {
+                  // 忽略解析错误
+                }
+              }
+
+              // 2. 在范围前后插入循环标记
+              // 注意：先插后面，再插前面，避免偏移
+              const oEndRange = oRange.Copy();
+              oEndRange.Collapse(false);
+              oEndRange.AddText("{{/}}");
+
+              const oStartRange = oRange.Copy();
+              oStartRange.Collapse(true);
+              oStartRange.AddText("{{?" + indicatorName + "}}");
+
+              // 3. 移除批注
+              oComment.Remove();
+              count++;
+            }
+          }
+          // 返回处理数量
+          Asc.scope.resolveLoop(count);
+        }, false);
+      } catch (err) {
+        logError('Error in processLoopRegions:', err);
+        resolve(0);
+      }
+    });
+  }
+
+  /**
    * 可视化 → 原始转换 (Async)
    * 将 Content Control 转换为模板语法，并收集指标映射关系
    *
@@ -95,6 +164,9 @@
    */
   async function visualToRaw() {
     log('========== VISUAL_TO_RAW START ==========');
+
+    // 0. 处理循环区域批注
+    await processLoopRegions();
 
     const indicatorMap = {};
 
@@ -279,6 +351,13 @@
    */
   function generateExpression(tag) {
     log('📝 generateExpression for:', JSON.stringify(tag, null, 2));
+
+    // 处理循环区域内的字段
+    if (tag.isInLoop) {
+      const expression = `{{=#this.get("${tag.field}")}}`;
+      log('📝 Loop region field expression:', expression);
+      return expression;
+    }
 
     let expression = '';
 
