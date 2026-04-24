@@ -123,7 +123,13 @@
             const sText = oComment.GetText();
 
             if (sText && sText.indexOf(loopPrefix) === 0) {
-              const indicatorName = sText.substring(loopPrefix.length).trim();
+              let indicatorName = sText.substring(loopPrefix.length).trim();
+              
+              // 容错处理：如果用户手动加了【】或者从旧版本恢复而来，先去掉
+              if (indicatorName.startsWith('【') && indicatorName.endsWith('】')) {
+                indicatorName = indicatorName.substring(1, indicatorName.length - 1);
+              }
+
               const oRange = oComment.GetRange();
 
               // 1. 标记该范围内的内容控件
@@ -196,7 +202,7 @@
             // 正则匹配循环开始：{{?JK...subList(...)}}
             const sSearchText = oSearchRange.GetText();
             // 注意：因为 callCommand 不支持闭包引用外部 Patterns，我们重新定义
-            const loopStartRegex = /\{\{\?([A-Z0-9]+)\.subList\((\d+),\s*(\d+)\)\}\}/g;
+            const loopStartRegex = /\{\{\?([A-Z0-9]+\.subList\(\d+,\s*\d+\))\}\}/g;
             
             let lastMatch = null;
             let match;
@@ -205,8 +211,8 @@
             }
             
             if (lastMatch) {
-              const fullStart = lastMatch[0];
-              const indicatorName = lastMatch[1];
+              const fullStart = lastMatch[0]; // e.g. "{{?JK4816.subList(0, 10)}}"
+              const indicatorContent = lastMatch[1]; // e.g. "JK4816.subList(0, 10)"
               
               // 在 oSearchRange 中搜索这个具体的 fullStart
               // 应该搜索最后一次出现的，以处理嵌套（目前假设不嵌套，但这样更稳）
@@ -218,7 +224,7 @@
                 const oLoopRange = oDocument.GetRange(oStartRange.GetStart(), oEndRange.GetEnd());
                 
                 // 4. 添加批注
-                oLoopRange.AddComment("循环区域：【" + indicatorName + "】", "TemplateEditor");
+                oLoopRange.AddComment("循环区域：" + indicatorContent, "TemplateEditor");
                 
                 // 5. 移除标记文本 (注意：先删标记，不影响已添加的批注)
                 oEndRange.Delete();

@@ -445,7 +445,7 @@
         var oDocument = Api.GetDocument();
         var oRange = oDocument.GetSelection();
         if (oRange) {
-            oRange.AddComment("循环区域：【待配置】", "TemplateEditor");
+            oRange.AddComment("循环区域：JK4816.subList(0, 10)", "TemplateEditor");
         }
     }, function() {
         // Response handled via bridge if needed
