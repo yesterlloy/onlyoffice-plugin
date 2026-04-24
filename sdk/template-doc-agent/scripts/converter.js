@@ -99,7 +99,7 @@
     const indicatorMap = {};
 
     // 1. 获取所有 Content Control
-    log('📋 Calling GetAllContentControls...');
+    log('📋 Calling GetAllContentControls... 11111');
     const controls = await executeMethodPromise('GetAllContentControls', []);
     
     if (!controls || !Array.isArray(controls) || controls.length === 0) {
@@ -132,8 +132,9 @@
 
         // 移除控件并输入文本
         let ccPr = await executeMethodPromise('RemoveContentControl', [cc.InternalId]);
-        log('ccPr=', ccPr, tagData)
-        await executeMethodPromise('InputText', [expression, tagData.text || '']);
+
+        //
+        await executeMethodPromise('InputText', [expression]);
       } catch (e) {
         logError(`Failed to process control ${cc.InternalId}:`, e.message);
       }

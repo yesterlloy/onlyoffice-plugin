@@ -285,14 +285,15 @@
 
   function handleUpdateParams(data, startTime) {
     log('⚙️ Updating params...');
-    log('⚙️ uid:', data.uid);
+    log('⚙️ id:', data.tag?.InternalId);
     log('⚙️ paramValues:', JSON.stringify(data.paramValues, null, 2));
 
     try {
-      ContentControl.updateTag(data.uid, data.paramValues);
+      // 传递整个 tag 对象和新的参数值
+      ContentControl.updateTag(data.tag, data.paramValues);
       const elapsed = Date.now() - startTime;
 
-      logSuccess('Update complete', { uid: data.uid, elapsed: elapsed + 'ms' });
+      logSuccess('Update complete', { id: data.tag?.InternalId, elapsed: elapsed + 'ms' });
       reply('updateDone', {
         uid: data.uid,
         elapsed: elapsed,

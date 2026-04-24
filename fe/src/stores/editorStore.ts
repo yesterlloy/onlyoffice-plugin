@@ -38,7 +38,7 @@ interface EditorState {
   insertIndicatorToOnlyOffice: (indicator: DocTagItem) => Promise<any>
   replaceDroppedIndicatorInOnlyOffice: (dropUid: string, indicator: DocTagItem) => Promise<any>
   removeIndicatorFromOnlyOffice: (tag: DocContentControl) => Promise<any>
-  updateIndicatorParams: (uid: string, paramValues: Record<string, any>) => Promise<any>
+  updateIndicatorParams: (tag: DocContentControl, paramValues: Record<string, any>) => Promise<any>
   getDocTagsFromOnlyOffice: () => Promise<any>
   convertToRawTemplate: () => Promise<any>
   saveTemplate: (rawContent: string, indicatorMap: Record<string, any>) => Promise<void>
@@ -191,11 +191,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     }
   },
 
-  updateIndicatorParams: async (uid, paramValues) => {
-    console.log('[Store] ⚙️ updateIndicatorParams START', { uid, paramValues })
+  updateIndicatorParams: async (tag, paramValues) => {
+    console.log('[Store] ⚙️ updateIndicatorParams START', { tag, paramValues })
     try {
-      console.log('[Store] 📤 Sending UPDATE_PARAMS message')
-      const result = await onlyOfficeBridge.send(MESSAGE_TYPES.UPDATE_PARAMS, { uid, paramValues })
+      console.log('[Store] 📤 Sending UPDATE_PARAMS message with full tag data')
+      const result = await onlyOfficeBridge.send(MESSAGE_TYPES.UPDATE_PARAMS, { 
+        uid: tag.Tag?.uid, 
+        tag,
+        paramValues 
+      })
       console.log('[Store] ✅ Update SUCCESS:', result)
       return result
     } catch (error) {

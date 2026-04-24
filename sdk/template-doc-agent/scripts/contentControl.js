@@ -67,21 +67,26 @@
 
     const tagJson = JSON.stringify(tagData);
     log('📦 Tag metadata:', tagJson);
-    log('📦 Tag size:11111', tagJson.length, 'bytes', style.color);
+    log('📦 Tag size:55555', tagJson.length, 'bytes', style.color);
 
     // 构建 Content Control 配置
     const ccConfig = {
       Props: {
+        Id: uid,
         Tag: tagJson,
         Title: displayTitle,
-        Lock: 0,  // 0 - 可编辑
+        // Alias: displayTitle,
+        PlaceHolderText: displayTitle,
+        // 0 - 仅删除 1 - 禁止删除或编辑 2 - 仅编辑 3 - 完全访问
+        Lock: 3,
         Appearance: 1  // 1 - 标签
       },
       Script: `
-        var oParagraph = Api.CreateParagraph();
-        oParagraph.AddText("${displayTitle}");
 
-        Api.GetDocument().InsertContent([oParagraph], true, {"KeepTextOnly": true});
+        var oRun = Api.CreateInlineLvlSdt()
+        oRun.AddText("${displayTitle}");
+
+        Api.GetDocument().InsertContent([oRun], true, {"KeepTextOnly": true});
       `
     };
 
@@ -99,7 +104,10 @@
     // 注意：executeMethod 的第二个参数是传递给内部方法的参数列表。
     // InsertAndReplaceContentControls 接收一个数组作为唯一参数。
     // 因此需要嵌套数组: [[ccConfig]]
-    window.Asc.plugin.executeMethod('InsertAndReplaceContentControls', [[ccConfig]]);
+    // window.Asc.plugin.executeMethod('InsertAndReplaceContentControls', [[ccConfig]]);
+
+    //指定内容控件类型的数值。可以是以下值之一：1（块）、2（内联）、3（行）或 4（单元格）。
+    window.Asc.plugin.executeMethod ("AddContentControl", [2, ccConfig.Props]);
 
     logSuccess('Insert API called');
     log('========== INSERT END ==========');
@@ -113,7 +121,7 @@
    */
   function remove(data) {
     log('========== REMOVE START ==========');
-    log('🗑️ data.InternalId=====:', data.InternalId);
+    log('🗑️ data.InternalId11111111:', data.InternalId);
 
     if (!window.Asc || !window.Asc.plugin) {
       logError('OnlyOffice API not available!');
@@ -129,7 +137,7 @@
       // 2. 清除控件内的文本内容
       // 使用 InputText 将选中的文本（刚才移除控件后会自动选中该区域）替换为空
       // 这里的 data.Title 通常是显示名称，作为原文本提示
-      window.Asc.plugin.executeMethod('InputText', ['', data.Tag?.text || '']);
+      // window.Asc.plugin.executeMethod('InputText', ['', data.Tag?.text || '']);
 
     logSuccess('Remove API called');
     log('========== REMOVE END ==========');
@@ -137,12 +145,12 @@
 
   /**
    * 更新 Content Control 的 Tag 元数据
-   * @param {string} uid - 标签唯一标识
+   * @param {Object} tag - 完整的 Content Control 对象
    * @param {Object} paramValues - 新的参数值
    */
-  function updateTag(uid, paramValues) {
-    log('========== UPDATE START ==========');
-    log('⚙️ UID:', uid);
+  function updateTag(tag, paramValues) {
+    log('========== UPDATE START 2222==========');
+    log('⚙️ InternalId:', tag.InternalId);
     log('⚙️ New paramValues:', JSON.stringify(paramValues, null, 2));
 
     if (!window.Asc || !window.Asc.plugin) {
@@ -150,39 +158,56 @@
       throw new Error('OnlyOffice API not available');
     }
 
-    log('📡 Calling GetContentControl to fetch current data...');
-
-    // 获取当前 Content Control
-    window.Asc.plugin.executeMethod('GetContentControl', [uid], function(result) {
-      log('📥 GetContentControl result:', JSON.stringify(result, null, 2));
-
-      if (result && result.Tag) {
-        try {
-          const tagData = JSON.parse(result.Tag);
-          log('📦 Current tagData:', JSON.stringify(tagData, null, 2));
-
-          tagData.paramValues = { ...tagData.paramValues, ...paramValues };
-          const newTagJson = JSON.stringify(tagData);
-
-          log('📦 Updated tagData:', newTagJson);
-
-          // 更新 Tag
-          log('📡 Calling UpdateContentControl...');
-
-          window.Asc.plugin.executeMethod('UpdateContentControl', [{
-            Id: uid,
-            Tag: newTagJson
-          }]);
-
-          logSuccess('Update complete');
-
-        } catch (e) {
-          logError('Parse tag failed:', e.message, e.stack);
-        }
-      } else {
-        logError('ContentControl not found or no Tag data');
+    try {
+      // 1. 获取当前的 Tag 数据
+      let tagData = tag.Tag;
+      if (typeof tagData === 'string') {
+        tagData = JSON.parse(tagData);
       }
-    });
+
+      // 2. 合并新参数
+      tagData.paramValues = { ...tagData.paramValues, ...paramValues };
+      const newTagJson = JSON.stringify(tagData);
+
+      log('📦 Updated tagData:', newTagJson);
+
+      // 3. 调用 UpdateContentControl 更新
+      // 使用 InternalId 以确保操作正确的目标
+      // 构建 Content Control 配置
+    const ccConfig = {
+      Props: {
+        Tag: newTagJson,
+        InternalId: tag.InternalId,
+        Id: tagData.uid,
+        //0 - 仅删除 1 - 禁止删除或编辑 2 - 仅编辑 3 - 完全访问
+        Lock: 3,  // 0 - 可编辑
+        Appearance: 1  // 1 - 标签
+      },
+      Script: `
+        var oParagraph = Api.CreateParagraph();
+        oParagraph.AddText("${tagData.text}");
+
+        Api.GetDocument().InsertContent([oParagraph], true, {"KeepTextOnly": true});
+      `
+    };
+
+    log('🔧 ContentControl config:', JSON.stringify(ccConfig, null, 2));
+    log('window.Asc=', window.Asc)
+
+
+    log('📡 Calling InsertAndReplaceContentControls with correct nesting...');
+
+    // 注意：executeMethod 的第二个参数是传递给内部方法的参数列表。
+    // InsertAndReplaceContentControls 接收一个数组作为唯一参数。
+    // 因此需要嵌套数组: [[ccConfig]]
+    window.Asc.plugin.executeMethod('InsertAndReplaceContentControls', [[ccConfig]]);
+      
+
+      logSuccess('Update complete');
+
+    } catch (e) {
+      logError('Update tag failed:', e.message, e.stack);
+    }
 
     log('========== UPDATE END ==========');
   }
