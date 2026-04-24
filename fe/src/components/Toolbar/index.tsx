@@ -1,5 +1,6 @@
 import { Button, message } from 'antd'
 import { EyeOutlined, SaveOutlined } from '@ant-design/icons'
+import { MESSAGE_TYPES, onlyOfficeBridge } from '../../utils/onlyoffice-bridge'
 import './index.css'
 
 const Toolbar = () => {
@@ -26,6 +27,13 @@ const Toolbar = () => {
       </div>
 
       <div className="toolbar-right">
+        <Button 
+          type="default" 
+          onClick={() => onlyOfficeBridge.send(MESSAGE_TYPES.SET_LOOP_REGION)}
+        >
+          设置为循环区域
+        </Button>
+
         <Button type="default" icon={<EyeOutlined />}>
           预览
         </Button>
