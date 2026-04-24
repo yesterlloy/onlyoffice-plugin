@@ -95,6 +95,11 @@
         handleReplaceDroppedIndicator(data, startTime);
         break;
 
+      case 'setLoopRegion':
+        log('🎯 Handling: setLoopRegion');
+        handleSetLoopRegion(startTime);
+        break;
+
       default:
         logError('Unknown message type:', msg.type);
     }
@@ -433,6 +438,18 @@
         });
       }
     }, 300);
+  }
+
+  function handleSetLoopRegion(startTime) {
+    window.Asc.plugin.callCommand(function() {
+        var oDocument = Api.GetDocument();
+        var oRange = oDocument.GetSelection();
+        if (oRange) {
+            oRange.AddComment("循环区域：【待配置】", "TemplateEditor");
+        }
+    }, function() {
+        // Response handled via bridge if needed
+    });
   }
 
   // ========== 回复函数 - 根据来源选择方式 ==========
