@@ -280,6 +280,8 @@ export const MESSAGE_TYPES = {
   GET_DOC_TAGS: 'getDocTags',
   CONVERT_TO_RAW: 'convertToRaw',
   CONVERT_TO_VISUAL: 'convertToVisual',
+  SET_LOOP_REGION: 'setLoopRegion',
+  APPLY_LOOP_REGION: 'applyLoopRegion',
 
   // 插件 → 前端
   INSERT_DONE: 'insertDone',
