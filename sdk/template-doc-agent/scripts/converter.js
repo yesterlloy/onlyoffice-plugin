@@ -83,6 +83,15 @@
     // 日期格式：{{f(now(),"yyyy年MM月dd日")}}
     dateFormat: /\{\{f\(now\(\),"([^"]+)"\)\}\}/g,
 
+    // 循环开始：{{?JK4816.subList(0, 10)}}
+    loopStart: /\{\{\?([A-Z0-9]+)\.subList\((\d+),\s*(\d+)\)\}\}/g,
+
+    // 循环结束：{{/}}
+    loopEnd: /\{\{\/\}\}/g,
+
+    // 相对指标：{{=#this.get("name")}}
+    relativeIndicator: /\{\{=#this\.get\("([a-zA-Z0-9_]+)"\)\}\}/g,
+
     // 通用表达式
     genericExpression: /\{\{([^}]+)\}\}/g
   };
@@ -151,6 +160,77 @@
         }, false);
       } catch (err) {
         logError('Error in processLoopRegions:', err);
+        resolve(0);
+      }
+    });
+  }
+
+  /**
+   * 恢复循环区域（从模板语法到批注）
+   * 
+   * 1. 搜索 {{?JK...subList(...)}} 和 {{/}}
+   * 2. 获取两者之间的范围
+   * 3. 为该范围添加批注 "循环区域：【指标名称】"
+   * 4. 移除文本标记
+   */
+  function restoreLoopRegions() {
+    log('🔄 Restoring Loop Regions...');
+    return new Promise((resolve) => {
+      try {
+        Asc.scope.resolveRestoreLoop = resolve;
+        window.Asc.plugin.callCommand(() => {
+          const oDocument = Api.GetDocument();
+          
+          // 1. 查找所有结束标记 {{/}}
+          const aEndRanges = oDocument.Search("{{/}}", true);
+          let count = 0;
+          
+          // 从后往前处理，避免删除文本导致的 Range 偏移失效
+          for (let i = aEndRanges.length - 1; i >= 0; i--) {
+            const oEndRange = aEndRanges[i];
+            
+            // 2. 向上寻找最近的循环开始标记
+            // 技巧：创建一个从文档开头到当前结束标记的范围，在这个范围内搜索开始标记
+            const oSearchRange = oDocument.GetRange(0, oEndRange.GetEnd());
+            
+            // 正则匹配循环开始：{{?JK...subList(...)}}
+            const sSearchText = oSearchRange.GetText();
+            // 注意：因为 callCommand 不支持闭包引用外部 Patterns，我们重新定义
+            const loopStartRegex = /\{\{\?([A-Z0-9]+)\.subList\((\d+),\s*(\d+)\)\}\}/g;
+            
+            let lastMatch = null;
+            let match;
+            while ((match = loopStartRegex.exec(sSearchText)) !== null) {
+              lastMatch = match;
+            }
+            
+            if (lastMatch) {
+              const fullStart = lastMatch[0];
+              const indicatorName = lastMatch[1];
+              
+              // 在 oSearchRange 中搜索这个具体的 fullStart
+              // 应该搜索最后一次出现的，以处理嵌套（目前假设不嵌套，但这样更稳）
+              const aStarts = oSearchRange.Search(fullStart, true);
+              if (aStarts && aStarts.length > 0) {
+                const oStartRange = aStarts[aStarts.length - 1];
+                
+                // 3. 构造循环区域范围 (从开始标记的开头到结束标记的末尾)
+                const oLoopRange = oDocument.GetRange(oStartRange.GetStart(), oEndRange.GetEnd());
+                
+                // 4. 添加批注
+                oLoopRange.AddComment("循环区域：【" + indicatorName + "】", "TemplateEditor");
+                
+                // 5. 移除标记文本 (注意：先删标记，不影响已添加的批注)
+                oEndRange.Delete();
+                oStartRange.Delete();
+                count++;
+              }
+            }
+          }
+          Asc.scope.resolveRestoreLoop(count);
+        }, false);
+      } catch (err) {
+        logError('Error in restoreLoopRegions:', err);
         resolve(0);
       }
     });
@@ -281,6 +361,9 @@
         }
       }
     }
+
+    // 2. 恢复循环区域
+    await restoreLoopRegions();
 
     logSuccess('rawToVisual complete');
     log('========== RAW_TO_VISUAL END ==========');
