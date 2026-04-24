@@ -50,6 +50,24 @@
     DATA_ACCESS: /\{\{data\("([^"]+)"\)\}\}/g,
 
     /**
+     * 循环开始
+     * 示例：{{?JK4816.subList(0, 10)}}
+     */
+    LOOP_START: /\{\{\?([A-Z0-9]+)\.subList\((\d+),\s*(\d+)\)\}\}/g,
+
+    /**
+     * 循环结束
+     * 示例：{{/}}
+     */
+    LOOP_END: /\{\{\/\}\}/g,
+
+    /**
+     * 相对指标
+     * 示例：{{=#this.get("name")}}
+     */
+    RELATIVE_INDICATOR: /\{\{=#this\.get\("([a-zA-Z0-9_]+)"\)\}\}/g,
+
+    /**
      * 通用表达式（匹配所有 {{...}}）
      */
     GENERIC_EXPRESSION: /\{\{([^}]+)\}\}/g
@@ -119,6 +137,41 @@
         params: {
           format: match[1]
         }
+      };
+    }
+
+    // 循环开始
+    match = expression.match(/^\?([A-Z0-9]+)\.subList\((\d+),\s*(\d+)\)$/);
+    if (match) {
+      return {
+        type: 'loop_start',
+        code: match[1],
+        field: 'loop',
+        params: {
+          start: match[2],
+          end: match[3]
+        }
+      };
+    }
+
+    // 循环结束
+    if (expression === '/') {
+      return {
+        type: 'loop_end',
+        code: '',
+        field: '',
+        params: {}
+      };
+    }
+
+    // 相对指标
+    match = expression.match(/^=#this\.get\("([a-zA-Z0-9_]+)"\)$/);
+    if (match) {
+      return {
+        type: 'relative',
+        code: 'this',
+        field: match[1],
+        params: {}
       };
     }
 
