@@ -189,6 +189,7 @@ class OnlyOfficeBridge {
       getDocTags: 'allTags',
       convertToRaw: 'convertDone',
       convertToVisual: 'convertDone',
+      applyLoopConfig: 'applyLoopConfigSuccess',
     }
     return responseMap[requestType] || `${requestType}Done`
   }
@@ -281,7 +282,7 @@ export const MESSAGE_TYPES = {
   CONVERT_TO_RAW: 'convertToRaw',
   CONVERT_TO_VISUAL: 'convertToVisual',
   SET_LOOP_REGION: 'setLoopRegion',
-  APPLY_LOOP_REGION: 'applyLoopRegion',
+  APPLY_LOOP_CONFIG: 'applyLoopConfig',
 
   // 插件 → 前端
   INSERT_DONE: 'insertDone',
@@ -290,6 +291,7 @@ export const MESSAGE_TYPES = {
   ALL_TAGS: 'allTags',
   CONVERT_DONE: 'convertDone',
   TAG_CLICKED: 'tagClicked',
+  LOOP_COMMENT_CLICKED: 'loopCommentClicked',
   EDITOR_READY: 'editorReady',
   BRIDGE_READY: 'bridgeReady',
 

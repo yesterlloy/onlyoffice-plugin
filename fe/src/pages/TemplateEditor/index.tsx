@@ -44,6 +44,7 @@ const TemplateEditorPage = () => {
     documentTitle,
     currentTemplateId,
     setCurrentEditingTag,
+    setCurrentLoopConfig,
     setConfigPanelVisible,
     insertIndicatorToOnlyOffice,
     getDocTagsFromOnlyOffice,
@@ -103,7 +104,16 @@ const TemplateEditorPage = () => {
       if(typeof data.Tag === 'string') {
         data.Tag = JSON.parse(data.Tag)
       }
+      setCurrentLoopConfig(null) // 清除循环区域配置
       setCurrentEditingTag(data)
+      setConfigPanelVisible(true)
+    }
+
+    // 循环区域评论点击
+    const handleLoopCommentClicked = (data: any) => {
+      console.log('[TemplateEditor] Loop Comment clicked message received:', data)
+      setCurrentEditingTag(null) // 清除普通标签编辑
+      setCurrentLoopConfig(data) // 设置循环区域配置
       setConfigPanelVisible(true)
     }
 
@@ -120,15 +130,17 @@ const TemplateEditorPage = () => {
     }
 
     onlyOfficeBridge.on(MESSAGE_TYPES.TAG_CLICKED, handleTagClicked)
+    onlyOfficeBridge.on(MESSAGE_TYPES.LOOP_COMMENT_CLICKED, handleLoopCommentClicked)
     onlyOfficeBridge.on(MESSAGE_TYPES.BRIDGE_READY, handleBridgeReady)
     onlyOfficeBridge.on(MESSAGE_TYPES.EDITOR_READY, handleEditorReady)
 
     return () => {
       onlyOfficeBridge.off(MESSAGE_TYPES.TAG_CLICKED, handleTagClicked)
+      onlyOfficeBridge.off(MESSAGE_TYPES.LOOP_COMMENT_CLICKED, handleLoopCommentClicked)
       onlyOfficeBridge.off(MESSAGE_TYPES.BRIDGE_READY, handleBridgeReady)
       onlyOfficeBridge.off(MESSAGE_TYPES.EDITOR_READY, handleEditorReady)
     }
-  }, [setCurrentEditingTag, setConfigPanelVisible, setEditorReady])
+  }, [setCurrentEditingTag, setCurrentLoopConfig, setConfigPanelVisible, setEditorReady])
 
   // 处理指标放置到文档内占位符（由 IndicatorPanel 触发）
   const handleDropIndicator = async (uid: string, indicator: IndicatorMetadata) => {

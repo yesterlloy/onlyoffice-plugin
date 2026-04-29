@@ -17,6 +17,10 @@ interface EditorState {
   currentEditingTag: DocContentControl | null
   configPanelVisible: boolean
 
+  // 当前循环区域配置
+  currentLoopConfig: any | null
+  setCurrentLoopConfig: (config: any | null) => void
+
   // 当前模板信息
   currentTemplateId: number | null
   documentUrl: string | null
@@ -39,6 +43,7 @@ interface EditorState {
   replaceDroppedIndicatorInOnlyOffice: (dropUid: string, indicator: DocTagItem) => Promise<any>
   removeIndicatorFromOnlyOffice: (tag: DocContentControl) => Promise<any>
   updateIndicatorParams: (tag: DocContentControl, paramValues: Record<string, any>) => Promise<any>
+  applyLoopConfigToOnlyOffice: (config: any) => Promise<any>
   getDocTagsFromOnlyOffice: () => Promise<any>
   convertToRawTemplate: () => Promise<any>
   saveTemplate: (rawContent: string, indicatorMap: Record<string, any>) => Promise<void>
@@ -53,12 +58,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   backendConfig: null,
   currentEditingTag: null,
   configPanelVisible: false,
+  currentLoopConfig: null,
   currentTemplateId: null,
-  documentUrl: 'http://192.168.1.223:8080/template-editor/files/templates/20260416110039/test.docx',
+  documentUrl: 'http://192.168.1.223:8081/template-editor/files/templates/20260416110039/test.docx',
   documentKey: 'key123',
   documentTitle: 'new.docx',
   templateIndicatorMap: null,
-  callbackUrl: 'http://192.168.1.223:8080/example/api/documents/4/callback',
+  callbackUrl: 'http://192.168.1.223:8081/example/api/documents/4/callback',
 
   // Actions
   setCategories: (categories) => set({ categories }),
@@ -67,6 +73,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setEditorReady: (ready) => set({ editorReady: ready }),
   setConfigPanelVisible: (visible) => set({ configPanelVisible: visible }),
   setCurrentEditingTag: (tag) => set({ currentEditingTag: tag }),
+  setCurrentLoopConfig: (config) => set({ currentLoopConfig: config }),
   setCurrentTemplate: (id, url, key, title) => set({
     currentTemplateId: id,
     documentUrl: url,
@@ -204,6 +211,18 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       return result
     } catch (error) {
       console.error('[Store] ❌ Update FAILED:', error)
+      throw error
+    }
+  },
+
+  applyLoopConfigToOnlyOffice: async (config) => {
+    console.log('[Store] ⚙️ applyLoopConfigToOnlyOffice START', { config })
+    try {
+      const result = await onlyOfficeBridge.send(MESSAGE_TYPES.APPLY_LOOP_CONFIG, config)
+      console.log('[Store] ✅ Apply Loop Config SUCCESS:', result)
+      return result
+    } catch (error) {
+      console.error('[Store] ❌ Apply Loop Config FAILED:', error)
       throw error
     }
   },

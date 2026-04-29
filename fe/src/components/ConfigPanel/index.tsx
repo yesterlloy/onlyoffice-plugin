@@ -19,10 +19,13 @@ interface ConfigPanelProps {}
 const ConfigPanel = ({}: ConfigPanelProps) => {
   const {
     currentEditingTag,
+    currentLoopConfig,
+    setCurrentLoopConfig,
     configPanelVisible,
     setConfigPanelVisible,
     indicatorMap,
     updateIndicatorParams,
+    applyLoopConfigToOnlyOffice,
     removeIndicatorFromOnlyOffice,
   } = useEditorStore()
 
@@ -53,6 +56,26 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
   // 关闭面板
   const handleClose = () => {
     setConfigPanelVisible(false)
+    setCurrentLoopConfig(null)
+  }
+
+  // 保存循环区域配置
+  const handleApplyLoop = async () => {
+    if (!currentLoopConfig) return
+
+    try {
+      const values = await form.validateFields()
+      await applyLoopConfigToOnlyOffice({
+        ...currentLoopConfig,
+        indicatorId: values.indicatorId,
+        startIndex: values.startIndex,
+        endIndex: values.endIndex,
+      })
+      message.success('循环区域配置已更新')
+      handleClose()
+    } catch (error) {
+      message.error('应用配置失败')
+    }
   }
 
   // 保存参数
@@ -112,7 +135,73 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
     }
   }
 
-  if (!currentEditingTag || !indicatorDetail) {
+  if (!currentEditingTag && !currentLoopConfig) {
+    return null
+  }
+
+  // 如果是循环区域配置
+  if (currentLoopConfig) {
+    return (
+      <Drawer
+        title={
+          <div className="config-drawer-title">
+            <span>循环区域配置</span>
+          </div>
+        }
+        placement="right"
+        width={380}
+        open={configPanelVisible}
+        onClose={handleClose}
+        footer={
+          <div className="config-drawer-footer" style={{ justifyContent: 'flex-end' }}>
+            <Space>
+              <Button onClick={handleClose}>取消</Button>
+              <Button type="primary" icon={<SaveOutlined />} onClick={handleApplyLoop}>
+                应用配置
+              </Button>
+            </Space>
+          </div>
+        }
+        className="config-drawer loop-config"
+      >
+        <div className="config-indicator-info">
+          <div className="config-indicator-name">循环范围：{currentLoopConfig.quote}</div>
+          <div className="config-indicator-code">当前文本：{currentLoopConfig.text}</div>
+        </div>
+
+        <Form form={form} layout="vertical" initialValues={{ startIndex: 0, endIndex: 10 }}>
+          <Form.Item
+            name="indicatorId"
+            label="绑定列表指标"
+            rules={[{ required: true, message: '请选择绑定的列表指标' }]}
+          >
+            <Select placeholder="请选择列表指标">
+              {Array.from(indicatorMap.values()).map((ind) => (
+                <Select.Option key={ind.indicatorId} value={ind.code}>
+                  {ind.name} ({ind.code})
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          
+          <Form.Item name="startIndex" label="起始索引 (含)">
+            <InputNumber min={0} style={{ width: '100%' }} placeholder="例如: 0" />
+          </Form.Item>
+          
+          <Form.Item name="endIndex" label="结束索引 (不含)">
+            <InputNumber min={1} style={{ width: '100%' }} placeholder="例如: 10" />
+          </Form.Item>
+          
+          <Divider />
+          <div style={{ color: '#666', fontSize: '12px' }}>
+            提示：配置后，该区域将根据选定指标的子列表进行循环渲染。
+          </div>
+        </Form>
+      </Drawer>
+    )
+  }
+
+  if (!indicatorDetail) {
     return null
   }
 

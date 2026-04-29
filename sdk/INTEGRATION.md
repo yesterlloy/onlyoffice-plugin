@@ -645,7 +645,7 @@ fe/src/
 ```env
 # .env.development
 VITE_DOCUMENTSERVER_URL=http://localhost:80
-VITE_API_BASE_URL=http://localhost:8080/template-editor
+VITE_API_BASE_URL=http://localhost:8081/template-editor
 VITE_PLUGIN_URL=http://localhost/sdkjs-plugins/template-doc-agent/config.json
 
 # .env.production

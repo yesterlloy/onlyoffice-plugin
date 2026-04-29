@@ -23,6 +23,25 @@
     console.log(LOG_PREFIX, '✅', ...args);
   }
 
+  /**
+   * 将 OnlyOffice executeMethod 包装为 Promise
+   * @param {string} method - 方法名
+   * @param {any} params - 参数
+   * @returns {Promise<any>}
+   */
+  function executeMethodPromise(method, params) {
+    return new Promise((resolve) => {
+      try {
+        window.Asc.plugin.executeMethod(method, params, (result) => {
+          resolve(result);
+        });
+      } catch (err) {
+        logError(`Error executing method ${method}:`, err);
+        resolve(null); // Resolve with null on error to prevent hanging
+      }
+    });
+  }
+
   // 导入模块
   const ContentControl = window.ContentControlModule || {};
   const Converter = window.ConverterModule || {};
@@ -100,6 +119,11 @@
         handleSetLoopRegion(startTime);
         break;
 
+      case 'applyLoopConfig':
+        log('🎯 Handling: applyLoopConfig');
+        handleApplyLoopConfig(data, startTime);
+        break;
+
       default:
         logError('Unknown message type:', msg.type);
     }
@@ -163,7 +187,7 @@
 
   // 插件初始化
   window.Asc.plugin.init = function() {
-    log('🚀 Plugin initialized');
+    log('🚀 Plugin initialized 22222');
     log('📦 Available modules:', {
       ContentControl: Object.keys(ContentControl),
       Converter: Object.keys(Converter)
@@ -187,25 +211,45 @@
 
         // 监听点击事件作为兜底
         window.Asc.plugin.attachEditorEvent("onClick", function() {
-          log('🖱️ EditorEvent: onClick 11111');
+          log('🖱️ EditorEvent: onClick 6666');
+          
           window.Asc.plugin.executeMethod("GetCurrentContentControl", null, function (internalId) {
             console.log('current id', internalId)
-            // 点击对象不是ContentControl
-            if(!internalId) {
-              return
-            }
-
-            window.Asc.plugin.executeMethod('GetAllContentControls', null, function (data) {
-              console.log('GetAllContentControls data:', internalId, data)
-              for (var i = 0; i < data.length; i++) {
-                if (data[i].InternalId == internalId) {
-                  onTargetControlClick(data[i]);
-                  break;
+            
+            if(internalId) {
+              // 处理 ContentControl 点击
+              window.Asc.plugin.executeMethod('GetAllContentControls', null, function (data) {
+                console.log('GetAllContentControls data:', internalId, data)
+                for (var i = 0; i < data.length; i++) {
+                  if (data[i].InternalId == internalId) {
+                    onTargetControlClick(data[i]);
+                    break;
+                  }
                 }
-              }
-            });
+              });
+            } else {
+              // 点击对象不是ContentControl，尝试检测是否点击了循环区域批注
+              checkForLoopComment();
+            }
           });
         });
+
+        // 监听批注点击/聚焦事件 - 循环区域配置入口
+        window.Asc.plugin.attachEditorEvent("onClickAnnotation", function(data) {
+          log('🖱️ EditorEvent: onClickAnnotation', data);
+          checkForLoopComment(data);
+        });
+
+        window.Asc.plugin.attachEditorEvent("onFocusAnnotation", function(data) {
+          log('🖱️ EditorEvent: onFocusAnnotation', data);
+          checkForLoopComment(data);
+        });
+
+        // 监听光标位置变化 - 更加灵敏的检测方式
+        // window.Asc.plugin.attachEditorEvent("onTargetPositionChanged", function() {
+          // 为了性能考虑，可以在这里做频率限制，但目前逻辑较轻，直接调用
+          // checkForLoopComment();
+        // });
         
         // log('✅ attachEditorEvent listeners initialized');
       }
@@ -213,6 +257,76 @@
       log('⚠️ attachEditorEvent failed:', e.message);
     }
   };
+
+  /**
+   * 检测当前位置是否处于循环区域批注中
+   * @param {Object} eventData - 可选的事件数据（包含 paragraphId 和 ranges）
+   */
+  var isCheckingLoopComment = false;
+  function checkForLoopComment(eventData) {
+    if (isCheckingLoopComment) return;
+    isCheckingLoopComment = true;
+
+    window.Asc.plugin.callCommand(function(extData) {
+      var oDocument = Api.GetDocument();
+      var oRange = oDocument.GetRangeBySelect();
+      if (!oRange) return null;
+
+      // 1. 尝试检测标准 ApiComment
+      var aComments = [];
+      
+      if (oRange.GetComments) {
+        aComments = oRange.GetComments();
+      } else if (oRange.GetComment) {
+        var singleComment = oRange.GetComment();
+        if (singleComment) aComments = [singleComment];
+      }
+
+      // 如果通过 Range 无法直接获取，且当前有选中文本，尝试通过 QuoteText 匹配
+      if (aComments.length === 0) {
+        var selectedText = oRange.GetText();
+        if (selectedText) {
+          var allComments = oDocument.GetAllComments();
+          for (var i = 0; i < allComments.length; i++) {
+            var comment = allComments[i];
+            // 注意：某些版本 ApiComment 可能没有 GetQuoteText，需做防御
+            var quote = comment.GetQuoteText ? comment.GetQuoteText() : "";
+            if (quote === selectedText) {
+              aComments.push(comment);
+            }
+          }
+        }
+      }
+
+      // 过滤并返回循环区域批注
+      if (aComments && aComments.length > 0) {
+        for (var i = 0; i < aComments.length; i++) {
+          var text = aComments[i].GetText();
+          if (text && text.indexOf("循环区域：") === 0) {
+            return {
+              type: 'comment',
+              text: text,
+              quote: aComments[i].GetQuoteText ? aComments[i].GetQuoteText() : "",
+              author: aComments[i].GetAuthor ? aComments[i].GetAuthor() : "",
+            };
+          }
+        }
+      }
+      
+      // 2. 尝试检测 AnnotateParagraph 批注 (通过 extData)
+      if (extData && extData.ranges && extData.ranges.length > 0) {
+          // 目前 AnnotateParagraph 的元数据通过全文匹配 QuoteText 逻辑处理（见上方）
+      }
+
+      return null;
+    }, false, true, function(commentData) {
+      isCheckingLoopComment = false;
+      if (commentData) {
+        log('✅ Detected loop comment:', commentData);
+        reply('loopCommentClicked', commentData);
+      }
+    }, eventData);
+  }
 
   /**
    * OnlyOffice 事件：当点击 Content Control 时触发
@@ -440,15 +554,165 @@
     }, 300);
   }
 
-  function handleSetLoopRegion(startTime) {
-    window.Asc.plugin.callCommand(function() {
-        var oDocument = Api.GetDocument();
-        var oRange = oDocument.GetSelection();
-        if (oRange) {
-            oRange.AddComment("循环区域：JK4816.subList(0, 10)", "TemplateEditor");
-        }
-    }, function() {
-        // Response handled via bridge if needed
+  async function handleSetLoopRegion(startTime) {
+    log('🎯 handleSetLoopRegion START');
+    
+    // 1. 获取当前选择的段落 IDs (paragraphId 和 recalcId)
+    window.Asc.plugin.executeMethod("GetSelectedContent", [{ type: "json" }], function(data) {
+      log('📥 GetSelectedContent response type:', typeof data);
+      log('📥 GetSelectedContent response raw:', data);
+      
+      var selectionData = typeof data === 'string' ? JSON.parse(data) : data;
+      
+      // 兼容性处理：某些版本可能将段落信息放在 elements 中
+      var paragraphs = selectionData ? (selectionData.paragraphs || selectionData.elements) : null;
+
+      if (paragraphs && paragraphs.length > 0) {
+        log('✅ Got ' + paragraphs.length + ' paragraph/element(s) from GetSelectedContent');
+        
+        // 2. 在 callCommand 中精确计算每个段落的相对范围
+        window.Asc.plugin.callCommand(function() {
+          var oDocument = Api.GetDocument();
+          var oRange = oDocument.GetRangeBySelect();
+          if (!oRange) return null;
+
+          var nSelStart = oRange.GetStartPos();
+          var nSelEnd = oRange.GetEndPos();
+          var rangeResults = [];
+          
+          // 遍历选择区域涉及的所有段落
+          for (var i = 0; ; i++) {
+            var oPara = oRange.GetParagraph(i);
+            if (!oPara) break;
+            
+            var oParaRange = oPara.GetRange();
+            var nParaStart = oParaRange.GetStartPos();
+            var nParaEnd = oParaRange.GetEndPos();
+            
+            // 计算当前段落与选择区域的交集
+            var nRelStart = Math.max(0, nSelStart - nParaStart);
+            var nRelEnd = Math.min(nParaEnd - nParaStart, nSelEnd - nParaStart);
+            
+            if (nRelStart < nRelEnd) {
+              rangeResults.push({
+                start: nRelStart,
+                length: nRelEnd - nRelStart
+              });
+            }
+          }
+          return rangeResults;
+        }, false, true, function(ranges) {
+          if (ranges && ranges.length > 0) {
+            log('✅ Calculated ranges for ' + ranges.length + ' paragraphs');
+            
+            var appliedCount = 0;
+            var timestamp = Date.now();
+
+            // 3. 逐个段落应用 AnnotateParagraph
+            for (var i = 0; i < ranges.length; i++) {
+              if (i < paragraphs.length) {
+                var paraInfo = paragraphs[i];
+                var rangeInfo = ranges[i];
+                
+                // 确保 ID 存在
+                var sParaId = paraInfo.paragraphId || paraInfo.id;
+                var sRecalcId = paraInfo.recalcId || "r1"; // recalcId 缺失时兜底
+
+                if (sParaId) {
+                  window.Asc.plugin.executeMethod("AnnotateParagraph", [{
+                    "type": "highlightText",
+                    "name": "loop_region",
+                    "paragraphId": sParaId,
+                    "recalcId": sRecalcId,
+                    "ranges": [{
+                      "start": rangeInfo.start,
+                      "length": rangeInfo.length,
+                      "id": "loop_" + timestamp + "_" + i,
+                      "text": "循环区域：【待配置】"
+                    }]
+                  }]);
+                  appliedCount++;
+                }
+              }
+            }
+            
+            logSuccess('AnnotateParagraph executed for ' + appliedCount + ' paragraphs');
+            
+            reply('setLoopRegionSuccess', {
+              count: appliedCount,
+              timestamp: Date.now(),
+              elapsed: Date.now() - startTime
+            });
+          } else {
+            logError('No valid selection ranges found within paragraphs');
+            reply('setLoopRegionError', { message: 'Invalid selection' });
+          }
+        });
+      } else {
+        logError('Failed to get selection metadata, selectionData:', JSON.stringify(selectionData));
+        reply('setLoopRegionError', { 
+            message: 'Failed to get selection metadata',
+            debug: selectionData
+        });
+      }
+    });
+  }
+
+  function handleApplyLoopConfig(data, startTime) {
+    log('📝 Applying loop config:', data);
+    
+    var newText = "循环区域：【" + data.indicatorId + ".subList(" + (data.startIndex || 0) + ", " + (data.endIndex || 10) + ")】";
+
+    // 1. 先尝试通过 AnnotateParagraph 更新 (如果是新版标注)
+    // 获取当前位置的 IDs
+    window.Asc.plugin.executeMethod("GetSelectedContent", [{ type: "json" }], function(jsonRes) {
+      var selectionData = typeof jsonRes === 'string' ? JSON.parse(jsonRes) : jsonRes;
+      var paragraphs = selectionData ? (selectionData.paragraphs || selectionData.elements) : null;
+
+      if (paragraphs && paragraphs.length > 0) {
+        var targetPara = paragraphs[0];
+        
+        window.Asc.plugin.callCommand(function(configData) {
+          var oDocument = Api.GetDocument();
+          var oRange = oDocument.GetRangeBySelect();
+          if (!oRange) return null;
+
+          // 检查当前是否有标准批注
+          var aComments = oRange.GetComments ? oRange.GetComments() : [];
+          if (aComments.length === 0 && oRange.GetComment) {
+              var sc = oRange.GetComment();
+              if (sc) aComments = [sc];
+          }
+
+          if (aComments.length > 0) {
+            // 如果是标准批注，移除并重新添加
+            // 注意：由于 ApiComment.GetRange() 可能失败，我们直接使用当前选择区域 oRange
+            // 因为点击批注通常会选中该批注的文本
+            oRange.RemoveComment();
+            oRange.AddComment(configData.newText, "TemplateEditor");
+            return { type: 'comment' };
+          }
+          return { type: 'none', start: oRange.GetStartPos() - oRange.GetParagraph(0).GetRange().GetStartPos(), length: oRange.GetText().length };
+        }, false, true, function(res) {
+          if (res && res.type === 'none') {
+            // 如果不是标准批注，尝试使用 AnnotateParagraph (更新或添加)
+            window.Asc.plugin.executeMethod("AnnotateParagraph", [{
+              "type": "highlightText",
+              "name": "loop_region",
+              "paragraphId": targetPara.paragraphId,
+              "recalcId": targetPara.recalcId,
+              "ranges": [{
+                "start": res.start,
+                "length": res.length,
+                "id": "loop_" + Date.now(),
+                "text": newText
+              }]
+            }]);
+          }
+          log('✅ Apply Loop Config SUCCESS');
+          reply('applyLoopConfigSuccess', { status: 'ok', timestamp: Date.now() - startTime });
+        }, { newText: newText });
+      }
     });
   }
 

@@ -29,7 +29,7 @@ const Toolbar = () => {
       <div className="toolbar-right">
         <Button 
           type="default" 
-          onClick={() => onlyOfficeBridge.send(MESSAGE_TYPES.SET_LOOP_REGION)}
+          onClick={() => onlyOfficeBridge.send(MESSAGE_TYPES.SET_LOOP_REGION, { id: 1})}
         >
           设置为循环区域
         </Button>
