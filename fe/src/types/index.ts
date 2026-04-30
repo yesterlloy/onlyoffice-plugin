@@ -60,6 +60,8 @@ export interface DocTagItem {
   chartType?: ChartType
   paramValues: Record<string, any>
   text?: string
+  isLoopStart?: boolean
+  loopEndUid?: string
 }
 
 export interface DocContentControl {

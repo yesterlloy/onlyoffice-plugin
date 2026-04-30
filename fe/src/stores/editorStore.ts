@@ -43,6 +43,8 @@ interface EditorState {
   replaceDroppedIndicatorInOnlyOffice: (dropUid: string, indicator: DocTagItem) => Promise<any>
   removeIndicatorFromOnlyOffice: (tag: DocContentControl) => Promise<any>
   updateIndicatorParams: (tag: DocContentControl, paramValues: Record<string, any>) => Promise<any>
+  setLoopRegionInOnlyOffice: (tag: DocContentControl) => Promise<any>
+  removeLoopEndInOnlyOffice: (tag: DocContentControl) => Promise<any>
   applyLoopConfigToOnlyOffice: (config: any) => Promise<any>
   getDocTagsFromOnlyOffice: () => Promise<any>
   convertToRawTemplate: () => Promise<any>
@@ -211,6 +213,30 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       return result
     } catch (error) {
       console.error('[Store] ❌ Update FAILED:', error)
+      throw error
+    }
+  },
+
+  setLoopRegionInOnlyOffice: async (tag) => {
+    console.log('[Store] ⚙️ setLoopRegionInOnlyOffice START', { tag })
+    try {
+      const result = await onlyOfficeBridge.send(MESSAGE_TYPES.SET_LOOP_REGION, tag)
+      console.log('[Store] ✅ Set Loop Region SUCCESS:', result)
+      return result
+    } catch (error) {
+      console.error('[Store] ❌ Set Loop Region FAILED:', error)
+      throw error
+    }
+  },
+
+  removeLoopEndInOnlyOffice: async (tag) => {
+    console.log('[Store] ⚙️ removeLoopEndInOnlyOffice START', { tag })
+    try {
+      const result = await onlyOfficeBridge.send(MESSAGE_TYPES.REMOVE_LOOP_END, tag)
+      console.log('[Store] ✅ Remove Loop End SUCCESS:', result)
+      return result
+    } catch (error) {
+      console.error('[Store] ❌ Remove Loop End FAILED:', error)
       throw error
     }
   },

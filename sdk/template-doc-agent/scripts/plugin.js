@@ -116,7 +116,12 @@
 
       case 'setLoopRegion':
         log('🎯 Handling: setLoopRegion');
-        handleSetLoopRegion(startTime);
+        handleSetLoopRegion(data, startTime);
+        break;
+
+      case 'removeLoopEnd':
+        log('🎯 Handling: removeLoopEnd');
+        handleRemoveLoopEnd(data, startTime);
         break;
 
       case 'applyLoopConfig':
@@ -554,108 +559,138 @@
     }, 300);
   }
 
-  async function handleSetLoopRegion(startTime) {
-    log('🎯 handleSetLoopRegion START');
+  async function handleSetLoopRegion(data, startTime) {
+    log('🎯 handleSetLoopRegion START', data);
     
-    // 1. 获取当前选择的段落 IDs (paragraphId 和 recalcId)
-    window.Asc.plugin.executeMethod("GetSelectedContent", [{ type: "json" }], function(data) {
-      log('📥 GetSelectedContent response type:', typeof data);
-      log('📥 GetSelectedContent response raw:', data);
-      
-      var selectionData = typeof data === 'string' ? JSON.parse(data) : data;
-      
-      // 兼容性处理：某些版本可能将段落信息放在 elements 中
-      var paragraphs = selectionData ? (selectionData.paragraphs || selectionData.elements) : null;
+    if (!data || !data.InternalId) {
+      reply('setLoopRegionError', { message: 'Invalid tag data' });
+      return;
+    }
 
-      if (paragraphs && paragraphs.length > 0) {
-        log('✅ Got ' + paragraphs.length + ' paragraph/element(s) from GetSelectedContent');
+    window.Asc.plugin.callCommand(function(tagInfo) {
+      var oDocument = Api.GetDocument();
+      var oContentControls = oDocument.GetAllContentControls();
+      var oTargetCC = null;
+      for (var i = 0; i < oContentControls.length; i++) {
+        if (oContentControls[i].GetInternalId() == tagInfo.InternalId) {
+          oTargetCC = oContentControls[i];
+          break;
+        }
+      }
+
+      if (oTargetCC) {
+        var tagJson = oTargetCC.GetTag();
+        if (!tagJson) return false;
+        var tagData = JSON.parse(tagJson);
         
-        // 2. 在 callCommand 中精确计算每个段落的相对范围
-        window.Asc.plugin.callCommand(function() {
-          var oDocument = Api.GetDocument();
-          var oRange = oDocument.GetRangeBySelect();
-          if (!oRange) return null;
-
-          var nSelStart = oRange.GetStartPos();
-          var nSelEnd = oRange.GetEndPos();
-          var rangeResults = [];
+        if (!tagData.text.startsWith('循环开始：')) {
+          tagData.text = '循环开始：' + tagData.text;
+          tagData.isLoopStart = true;
+          tagData.loopEndUid = tagData.uid + '_end';
           
-          // 遍历选择区域涉及的所有段落
-          for (var i = 0; ; i++) {
-            var oPara = oRange.GetParagraph(i);
-            if (!oPara) break;
-            
-            var oParaRange = oPara.GetRange();
-            var nParaStart = oParaRange.GetStartPos();
-            var nParaEnd = oParaRange.GetEndPos();
-            
-            // 计算当前段落与选择区域的交集
-            var nRelStart = Math.max(0, nSelStart - nParaStart);
-            var nRelEnd = Math.min(nParaEnd - nParaStart, nSelEnd - nParaStart);
-            
-            if (nRelStart < nRelEnd) {
-              rangeResults.push({
-                start: nRelStart,
-                length: nRelEnd - nRelStart
-              });
-            }
-          }
-          return rangeResults;
-        }, false, true, function(ranges) {
-          if (ranges && ranges.length > 0) {
-            log('✅ Calculated ranges for ' + ranges.length + ' paragraphs');
-            
-            var appliedCount = 0;
-            var timestamp = Date.now();
+          oTargetCC.SetTag(JSON.stringify(tagData));
+          oTargetCC.Clear();
+          var oRun = Api.CreateRun();
+          oRun.AddText(tagData.text);
+          oTargetCC.AddElement(oRun, 0);
 
-            // 3. 逐个段落应用 AnnotateParagraph
-            for (var i = 0; i < ranges.length; i++) {
-              if (i < paragraphs.length) {
-                var paraInfo = paragraphs[i];
-                var rangeInfo = ranges[i];
-                
-                // 确保 ID 存在
-                var sParaId = paraInfo.paragraphId || paraInfo.id;
-                var sRecalcId = paraInfo.recalcId || "r1"; // recalcId 缺失时兜底
-
-                if (sParaId) {
-                  window.Asc.plugin.executeMethod("AnnotateParagraph", [{
-                    "type": "highlightText",
-                    "name": "loop_region",
-                    "paragraphId": sParaId,
-                    "recalcId": sRecalcId,
-                    "ranges": [{
-                      "start": rangeInfo.start,
-                      "length": rangeInfo.length,
-                      "id": "loop_" + timestamp + "_" + i,
-                      "text": "循环区域：【待配置】"
-                    }]
-                  }]);
-                  appliedCount++;
-                }
+          var oEndCC = Api.CreateInlineLvlSdt();
+          var endTagData = {
+             uid: tagData.loopEndUid,
+             type: 'loop_end',
+             text: '循环结束',
+             name: '循环结束',
+             isLoopEnd: true,
+             loopStartUid: tagData.uid
+          };
+          oEndCC.SetTag(JSON.stringify(endTagData));
+          oEndCC.SetLock("sdtContentUnlocked");
+          var oEndRun = Api.CreateRun();
+          oEndRun.AddText("循环结束");
+          oEndCC.AddElement(oEndRun, 0);
+          
+          var oPara = oTargetCC.GetParent();
+          if (oPara) {
+            var count = oPara.GetElementsCount();
+            var targetIndex = -1;
+            for (var j = 0; j < count; j++) {
+              var el = oPara.GetElement(j);
+              if (el && el.GetInternalId && el.GetInternalId() === tagInfo.InternalId) {
+                targetIndex = j;
+                break;
               }
             }
-            
-            logSuccess('AnnotateParagraph executed for ' + appliedCount + ' paragraphs');
-            
-            reply('setLoopRegionSuccess', {
-              count: appliedCount,
-              timestamp: Date.now(),
-              elapsed: Date.now() - startTime
-            });
-          } else {
-            logError('No valid selection ranges found within paragraphs');
-            reply('setLoopRegionError', { message: 'Invalid selection' });
+            if (targetIndex !== -1) {
+              oPara.AddElement(oEndCC, targetIndex + 1);
+            } else {
+              oPara.AddElement(oEndCC);
+            }
           }
-        });
-      } else {
-        logError('Failed to get selection metadata, selectionData:', JSON.stringify(selectionData));
-        reply('setLoopRegionError', { 
-            message: 'Failed to get selection metadata',
-            debug: selectionData
-        });
+        }
       }
-    });
+      return true;
+    }, false, true, function() {
+      reply('setLoopRegionSuccess', {
+        timestamp: Date.now(),
+        elapsed: Date.now() - startTime
+      });
+    }, { InternalId: data.InternalId });
+  }
+
+  async function handleRemoveLoopEnd(data, startTime) {
+    log('🎯 handleRemoveLoopEnd START', data);
+    
+    if (!data || !data.InternalId) {
+      reply('removeLoopEndError', { message: 'Invalid tag data' });
+      return;
+    }
+
+    window.Asc.plugin.callCommand(function(tagInfo) {
+      var oDocument = Api.GetDocument();
+      var oContentControls = oDocument.GetAllContentControls();
+      var oTargetCC = null;
+      for (var i = 0; i < oContentControls.length; i++) {
+        if (oContentControls[i].GetInternalId() == tagInfo.InternalId) {
+          oTargetCC = oContentControls[i];
+          break;
+        }
+      }
+
+      if (oTargetCC) {
+        var tagJson = oTargetCC.GetTag();
+        if (!tagJson) return false;
+        var tagData = JSON.parse(tagJson);
+        
+        if (tagData.text.startsWith('循环开始：')) {
+          tagData.text = tagData.text.substring(5); // 去除 "循环开始："
+          tagData.isLoopStart = false;
+          var endUid = tagData.loopEndUid;
+          delete tagData.loopEndUid;
+          
+          oTargetCC.SetTag(JSON.stringify(tagData));
+          oTargetCC.Clear();
+          var oRun = Api.CreateRun();
+          oRun.AddText(tagData.text);
+          oTargetCC.AddElement(oRun, 0);
+
+          for (var j = 0; j < oContentControls.length; j++) {
+            var ccTag = oContentControls[j].GetTag();
+            if (ccTag) {
+              var ccData = JSON.parse(ccTag);
+              if (ccData.uid === endUid || ccData.loopStartUid === tagData.uid) {
+                oContentControls[j].Delete(false);
+              }
+            }
+          }
+        }
+      }
+      return true;
+    }, false, true, function() {
+      reply('removeLoopEndSuccess', {
+        timestamp: Date.now(),
+        elapsed: Date.now() - startTime
+      });
+    }, { InternalId: data.InternalId });
   }
 
   function handleApplyLoopConfig(data, startTime) {

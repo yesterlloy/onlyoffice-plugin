@@ -190,6 +190,8 @@ class OnlyOfficeBridge {
       convertToRaw: 'convertDone',
       convertToVisual: 'convertDone',
       applyLoopConfig: 'applyLoopConfigSuccess',
+      setLoopRegion: 'setLoopRegionSuccess',
+      removeLoopEnd: 'removeLoopEndSuccess',
     }
     return responseMap[requestType] || `${requestType}Done`
   }
@@ -282,6 +284,7 @@ export const MESSAGE_TYPES = {
   CONVERT_TO_RAW: 'convertToRaw',
   CONVERT_TO_VISUAL: 'convertToVisual',
   SET_LOOP_REGION: 'setLoopRegion',
+  REMOVE_LOOP_END: 'removeLoopEnd',
   APPLY_LOOP_CONFIG: 'applyLoopConfig',
 
   // 插件 → 前端

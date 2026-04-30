@@ -26,6 +26,8 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
     indicatorMap,
     updateIndicatorParams,
     applyLoopConfigToOnlyOffice,
+    setLoopRegionInOnlyOffice,
+    removeLoopEndInOnlyOffice,
     removeIndicatorFromOnlyOffice,
   } = useEditorStore()
 
@@ -43,7 +45,14 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
 
       // 填充表单
       if (currentEditingTag.Tag.paramValues) {
-        form.setFieldsValue(currentEditingTag.Tag.paramValues)
+        form.setFieldsValue({
+          ...currentEditingTag.Tag.paramValues,
+          isLoop: !!currentEditingTag.Tag.isLoopStart,
+        })
+      } else {
+        form.setFieldsValue({
+          isLoop: !!currentEditingTag.Tag.isLoopStart,
+        })
       }
 
       // AI 类型默认显示提示词 Tab
@@ -103,6 +112,24 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
       handleClose()
     } catch (error) {
       message.error('删除失败')
+    }
+  }
+
+  // 设为循环开关变化
+  const handleLoopToggle = async (checked: boolean) => {
+    if (!currentEditingTag) return
+
+    try {
+      if (checked) {
+        await setLoopRegionInOnlyOffice(currentEditingTag)
+        message.success('已设为循环')
+      } else {
+        await removeLoopEndInOnlyOffice(currentEditingTag)
+        message.success('已取消循环')
+      }
+    } catch (error) {
+      message.error('操作失败')
+      form.setFieldsValue({ isLoop: !checked }) // 恢复原状
     }
   }
 
@@ -205,7 +232,7 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
     return null
   }
 
-  const isAi = currentEditingTag.Tag?.type === 'ai_generate'
+  const isAi = currentEditingTag?.Tag?.type === 'ai_generate'
 
   // 渲染参数控件
   const renderParamControl = (param: IndicatorParam) => {
@@ -360,8 +387,8 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
           <Form.Item label="模板表达式">
             <div className="template-expression">
               {isAi
-                ? `{{ai_generate("${currentEditingTag.Tag.field}", ...)}}`
-                : `{{${currentEditingTag.Tag.code}.get("${currentEditingTag.Tag.field}")}}`}
+                ? `{{ai_generate("${currentEditingTag?.Tag?.field}", ...)}}`
+                : `{{${currentEditingTag?.Tag?.code}.get("${currentEditingTag?.Tag?.field}")}}`}
             </div>
           </Form.Item>
           <Form.Item name="cache" label="缓存策略">
@@ -377,6 +404,9 @@ const ConfigPanel = ({}: ConfigPanelProps) => {
               <Select.Option value="hide">隐藏该段</Select.Option>
               <Select.Option value="custom">自定义文本</Select.Option>
             </Select>
+          </Form.Item>
+          <Form.Item name="isLoop" label="是否设为循环" valuePropName="checked">
+            <Switch onChange={handleLoopToggle} />
           </Form.Item>
         </Form>
       ),
