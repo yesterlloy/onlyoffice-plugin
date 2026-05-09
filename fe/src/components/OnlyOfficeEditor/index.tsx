@@ -88,30 +88,16 @@ const OnlyOfficeEditor = ({
 
   // 监听插件消息
   useEffect(() => {
+    const handleEditorReady = () => {
+      console.log('[OnlyOfficeEditor] ✅ Plugin ready message received')
+    }
+
     // 编辑器就绪
-    onlyOfficeBridge.on(MESSAGE_TYPES.EDITOR_READY, () => {
-      message.success('插件已就绪')
-    })
-
-    // 标签点击
-    onlyOfficeBridge.on(MESSAGE_TYPES.TAG_CLICKED, (data) => {
-      console.log('[Editor] Tag clicked:', data)
-      // TODO: 触发配置面板
-    })
-
-    // 错误处理
-    onlyOfficeBridge.on(MESSAGE_TYPES.INSERT_ERROR, (data) => {
-      message.error(`插入失败: ${data.error}`)
-    })
-    onlyOfficeBridge.on(MESSAGE_TYPES.REMOVE_ERROR, (data) => {
-      message.error(`删除失败: ${data.error}`)
-    })
-    onlyOfficeBridge.on(MESSAGE_TYPES.UPDATE_ERROR, (data) => {
-      message.error(`更新失败: ${data.error}`)
-    })
+    onlyOfficeBridge.on(MESSAGE_TYPES.EDITOR_READY, handleEditorReady)
 
     return () => {
-      onlyOfficeBridge.destroy()
+      console.log('[OnlyOfficeEditor] 🗑️ Component unmounting, cleaning up bridge listeners')
+      onlyOfficeBridge.off(MESSAGE_TYPES.EDITOR_READY, handleEditorReady)
       window.docEditor = null
     }
   }, [])
@@ -191,6 +177,7 @@ const OnlyOfficeEditor = ({
         id="onlyoffice-editor-container"
         documentServerUrl={config.documentServerUrl}
         config={editorConfig}
+        onDocumentReady={onDocumentReady}
         onLoadComponentError={onLoadComponentError}
       />
     </div>

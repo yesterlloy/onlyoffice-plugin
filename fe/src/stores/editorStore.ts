@@ -62,11 +62,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   configPanelVisible: false,
   currentLoopConfig: null,
   currentTemplateId: null,
-  documentUrl: 'http://192.168.1.223:8081/template-editor/files/templates/20260416110039/test.docx',
-  documentKey: 'key123',
-  documentTitle: 'new.docx',
+  documentUrl: '',
+  documentKey: '',
+  documentTitle: '',
   templateIndicatorMap: null,
-  callbackUrl: 'http://192.168.1.223:8081/example/api/documents/4/callback',
+  callbackUrl: '',
 
   // Actions
   setCategories: (categories) => set({ categories }),

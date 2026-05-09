@@ -13,7 +13,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080/template-editor',
+        target: 'http://localhost:8081/template-editor',
         changeOrigin: true,
       },
     },

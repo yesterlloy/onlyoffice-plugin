@@ -4,7 +4,7 @@
  * 负责模板语法与可视化 Content Control 之间的转换
  */
 
-(function(window, undefined) {
+(function (window, undefined) {
 
   // 调试日志配置
   const LOG_PREFIX = '[Converter]';
@@ -46,17 +46,11 @@
   function getDocumentPromise() {
     return new Promise((resolve) => {
       try {
-        //传递参数
-
-        Asc.scope.resolveFn = resolve
-        console.log('Asc.scope.resolveFn obj===', Asc.scope, Asc.scope.resolveFn)
-
         window.Asc.plugin.callCommand(() => {
           let oDocument = Api.GetDocument()
-          console.log('Api=', Api)
-          console.log('Asc=', Asc)
-          console.log('rrrrrrr fn=', Asc.scope.resolveFn, Asc.scope)
-          Asc.scope.resolveFn(oDocument);
+          return oDocument;
+        }, false, true, function (oDocument) {
+          resolve(oDocument);
         });
       } catch (err) {
         logError(`Error executing method ${method}:`, err);
@@ -96,151 +90,7 @@
     genericExpression: /\{\{([^}]+)\}\}/g
   };
 
-  /**
-   * 处理循环区域（通过批注标记）
-   * 
-   * 查找所有以 "循环区域：" 开头的批注：
-   * 1. 获取批注范围
-   * 2. 标记范围内的所有内容控件为 isInLoop: true
-   * 3. 在范围开始处插入 {{?JK...}}，在结尾处插入 {{/}}
-   * 4. 移除该批注
-   * 
-   * @returns {Promise<number>} - 处理的循环区域数量
-   */
-  function processLoopRegions() {
-    log('🔄 Processing Loop Regions...');
-    return new Promise((resolve) => {
-      try {
-        Asc.scope.resolveLoop = resolve;
-        window.Asc.plugin.callCommand(() => {
-          const oDocument = Api.GetDocument();
-          const aComments = oDocument.GetAllComments();
-          const loopPrefix = "循环区域：";
-          let count = 0;
 
-          for (let i = 0; i < aComments.length; i++) {
-            const oComment = aComments[i];
-            const sText = oComment.GetText();
-
-            if (sText && sText.indexOf(loopPrefix) === 0) {
-              let indicatorName = sText.substring(loopPrefix.length).trim();
-              
-              // 容错处理：如果用户手动加了【】或者从旧版本恢复而来，先去掉
-              if (indicatorName.startsWith('【') && indicatorName.endsWith('】')) {
-                indicatorName = indicatorName.substring(1, indicatorName.length - 1);
-              }
-
-              const oRange = oComment.GetRange();
-
-              // 1. 标记该范围内的内容控件
-              const aContentControls = oRange.GetContentControls();
-              for (let j = 0; j < aContentControls.length; j++) {
-                const oCC = aContentControls[j];
-                const sTag = oCC.GetTag();
-                try {
-                  const tagData = JSON.parse(sTag);
-                  tagData.isInLoop = true;
-                  oCC.SetTag(JSON.stringify(tagData));
-                } catch (e) {
-                  // 忽略解析错误
-                }
-              }
-
-              // 2. 在范围前后插入循环标记
-              // 注意：先插后面，再插前面，避免偏移
-              const oEndRange = oRange.Copy();
-              oEndRange.Collapse(false);
-              oEndRange.AddText("{{/}}");
-
-              const oStartRange = oRange.Copy();
-              oStartRange.Collapse(true);
-              oStartRange.AddText("{{?" + indicatorName + "}}");
-
-              // 3. 移除批注
-              oComment.Remove();
-              count++;
-            }
-          }
-          // 返回处理数量
-          Asc.scope.resolveLoop(count);
-        }, false);
-      } catch (err) {
-        logError('Error in processLoopRegions:', err);
-        resolve(0);
-      }
-    });
-  }
-
-  /**
-   * 恢复循环区域（从模板语法到批注）
-   * 
-   * 1. 搜索 {{?JK...subList(...)}} 和 {{/}}
-   * 2. 获取两者之间的范围
-   * 3. 为该范围添加批注 "循环区域：【指标名称】"
-   * 4. 移除文本标记
-   */
-  function restoreLoopRegions() {
-    log('🔄 Restoring Loop Regions...');
-    return new Promise((resolve) => {
-      try {
-        Asc.scope.resolveRestoreLoop = resolve;
-        window.Asc.plugin.callCommand(() => {
-          const oDocument = Api.GetDocument();
-          
-          // 1. 查找所有结束标记 {{/}}
-          const aEndRanges = oDocument.Search("{{/}}", true);
-          let count = 0;
-          
-          // 从后往前处理，避免删除文本导致的 Range 偏移失效
-          for (let i = aEndRanges.length - 1; i >= 0; i--) {
-            const oEndRange = aEndRanges[i];
-            
-            // 2. 向上寻找最近的循环开始标记
-            // 技巧：创建一个从文档开头到当前结束标记的范围，在这个范围内搜索开始标记
-            const oSearchRange = oDocument.GetRange(0, oEndRange.GetEnd());
-            
-            // 正则匹配循环开始：{{?JK...subList(...)}}
-            const sSearchText = oSearchRange.GetText();
-            // 注意：因为 callCommand 不支持闭包引用外部 Patterns，我们重新定义
-            const loopStartRegex = /\{\{\?([A-Z0-9]+\.subList\(\d+,\s*\d+\))\}\}/g;
-            
-            let lastMatch = null;
-            let match;
-            while ((match = loopStartRegex.exec(sSearchText)) !== null) {
-              lastMatch = match;
-            }
-            
-            if (lastMatch) {
-              const fullStart = lastMatch[0]; // e.g. "{{?JK4816.subList(0, 10)}}"
-              const indicatorContent = lastMatch[1]; // e.g. "JK4816.subList(0, 10)"
-              
-              // 在 oSearchRange 中搜索这个具体的 fullStart
-              // 应该搜索最后一次出现的，以处理嵌套（目前假设不嵌套，但这样更稳）
-              const aStarts = oSearchRange.Search(fullStart, true);
-              if (aStarts && aStarts.length > 0) {
-                const oStartRange = aStarts[aStarts.length - 1];
-                
-                // 3. 构造循环区域范围 (从开始标记的开头到结束标记的末尾)
-                const oLoopRange = oDocument.GetRange(oStartRange.GetStart(), oEndRange.GetEnd());
-                
-                // 4. 添加批注
-                oLoopRange.AddComment("循环区域：" + indicatorContent, "TemplateEditor");
-                
-                // 5. 移除标记文本 (注意：先删标记，不影响已添加的批注)
-                oEndRange.Delete();
-                oStartRange.Delete();
-                count++;
-              }
-            }
-          }
-          Asc.scope.resolveRestoreLoop(count);
-        }, false);
-      } catch (err) {
-        logError('Error in restoreLoopRegions:', err);
-        resolve(0);
-      }
-    });
-  }
 
   /**
    * 可视化 → 原始转换 (Async)
@@ -251,15 +101,12 @@
   async function visualToRaw() {
     log('========== VISUAL_TO_RAW START ==========');
 
-    // 0. 处理循环区域批注
-    await processLoopRegions();
-
     const indicatorMap = {};
 
     // 1. 获取所有 Content Control
     log('📋 Calling GetAllContentControls... 11111');
     const controls = await executeMethodPromise('GetAllContentControls', []);
-    
+
     if (!controls || !Array.isArray(controls) || controls.length === 0) {
       log('⚠️ No ContentControls found, fetching document content directly');
       const content = await executeMethodPromise('GetDocumentContent', []);
@@ -275,14 +122,23 @@
     // 2. 依次将控件替换为表达式，并收集映射
     for (let i = 0; i < controls.length; i++) {
       const cc = controls[i];
+      if (!cc || !cc.InternalId) {
+        log('⚠️ Skipping invalid or missing ContentControl at index', i);
+        continue;
+      }
       log('cc111=======', cc)
       try {
         const tagData = JSON.parse(cc.Tag);
         const expression = generateExpression(tagData);
-        
-        // 记录映射关系：表达式 -> 原始元数据
-        indicatorMap[expression] = tagData;
-        
+
+        // 记录映射关系：uid -> { expression, tagData }
+        const uid = tagData.uid || generateUid();
+        tagData.uid = uid;
+        indicatorMap[uid] = {
+          expression: expression,
+          tagData: tagData
+        };
+
         log(`🔄 move to and Replacing CC [${cc.InternalId}] with: ${expression}`);
 
         // 将光标移动到指定的内容控件。
@@ -320,20 +176,106 @@
    */
   async function rawToVisual(indicatorMap) {
     log('========== RAW_TO_VISUAL START ==========');
-    
-    if (!indicatorMap || Object.keys(indicatorMap).length === 0) {
-      log('⚠️ indicatorMap is empty, skipping conversion');
+
+    indicatorMap = indicatorMap || {};
+
+    const rawContent = await executeMethodPromise('GetDocumentContent', []);
+    log('rawContent==', rawContent)
+    if (rawContent) {
+      const expressions = findExpressions(rawContent);
+      log('🔍 Found', expressions.length, 'expressions from document content');
+
+      // 构建一个现有表达式的集合，用于判断是否需要新建 tagData
+      const existingExpressions = {};
+      for (const uid in indicatorMap) {
+        existingExpressions[indicatorMap[uid].expression] = true;
+      }
+
+      for (let i = 0; i < expressions.length; i++) {
+        const expr = expressions[i];
+        if (!existingExpressions[expr.full]) {
+          log('🆕 Building tag data for expression:', expr.full);
+          const newUid = generateUid();
+          const tagData = {
+            uid: newUid,
+            type: expr.type,
+            name: expr.expression,
+            code: '',
+            field: '',
+            paramValues: {}
+          };
+
+          if (expr.type === 'text' || expr.type === 'number' || expr.type === 'percent' || expr.type === 'date') {
+            const match = /([A-Z0-9]+)\.get\("([a-zA-Z0-9_]+)"\)/.exec(expr.expression);
+            if (match) {
+              tagData.code = match[1];
+              tagData.field = match[2];
+              tagData.name = tagData.code + '.' + tagData.field;
+            } else {
+              const parts = expr.expression.split('.');
+              if (parts.length >= 2) {
+                tagData.code = parts[0];
+                tagData.field = parts[1];
+              }
+            }
+          } else if (expr.type === 'chart') {
+            const match = /put\("([A-Z0-9]+)",\s*data\("([^"]+)"\)\)/.exec(expr.expression);
+            if (match) {
+              tagData.code = match[1];
+              tagData.paramValues.dataSource = match[2];
+              tagData.name = tagData.code + ' 图表';
+            }
+          } else if (expr.type === 'ai_generate') {
+            const match = /ai_generate\("([a-zA-Z0-9_]+)"/.exec(expr.expression);
+            if (match) {
+              tagData.field = match[1];
+              tagData.name = tagData.field + ' (AI)';
+            }
+          } else if (expr.type === 'loop_start') {
+            tagData.name = '循环开始';
+            tagData.isLoopStart = true;
+            const match = /^\?([A-Z0-9_]+)/.exec(expr.expression);
+            if (match) tagData.code = match[1];
+            tagData.text = '循环开始：【' + expr.expression.substring(1) + '】';
+          } else if (expr.type === 'loop_end') {
+            tagData.name = '循环结束';
+            tagData.isLoopEnd = true;
+          }
+
+          indicatorMap[newUid] = {
+            expression: expr.full,
+            tagData: tagData
+          };
+          existingExpressions[expr.full] = true;
+        }
+      }
+    }
+
+    if (Object.keys(indicatorMap).length === 0) {
+      log('⚠️ indicatorMap is empty and no expressions found, skipping conversion');
       return;
     }
 
-    // 遍历映射表中的每一个表达式
-    for (const expression in indicatorMap) {
-      const tagData = indicatorMap[expression];
-      log(`🔍 Searching for expression: ${expression}`);
+    // 按表达式对 UID 进行分组，以便为文档中多次出现的同一个表达式按序分配正确的 tagData
+    const exprToMappings = {};
+    for (const uid in indicatorMap) {
+      const mapping = indicatorMap[uid];
+      const expression = mapping.expression;
+      if (!exprToMappings[expression]) {
+        exprToMappings[expression] = [];
+      }
+      exprToMappings[expression].push(mapping.tagData);
+    }
+
+    // 遍历每一个唯一的表达式
+    for (const expression in exprToMappings) {
+      const tagDataList = exprToMappings[expression];
+      log(`🔍 Searching for expression: ${expression} (Total expected occurrences: ${tagDataList.length})`);
+
+      let tagDataIndex = 0;
+      let found = true;
 
       // 1. 使用 SearchNext 查找表达式
-      // 注意：同一个表达式可能出现多次，所以使用 while 循环直到找不到为止
-      let found = true;
       while (found) {
         let searchResult = window.Asc.plugin.executeMethod('SearchNext', [
           {
@@ -342,34 +284,33 @@
           },
           true // Wrap around?
         ])
-        log('rs====', searchResult)
-        // const searchResult = await executeMethodPromise('SearchNext', [
-        //   {
-        //     "searchString": expression,
-        //     "matchCase": true
-        //   },
-        //   true // Wrap around?
-        // ]);
 
         if (searchResult) {
-          log(`📍 Found expression: ${expression}, replacing...`);
+          log(`📍 Found occurrence ${tagDataIndex + 1} of expression: ${expression}, replacing...`);
 
-          // 2. 使用 InputText 将匹配到的文本替换为空（即删除该文本并保持光标位置）
-          // 第一个参数是替换后的文本，第二个参数是原始文本（用于匹配，但 SearchNext 已经选中了，这里传空即可）
+          // 2. 使用 InputText 将匹配到的文本替换为空
           await executeMethodPromise('InputText', ['', expression]);
 
+          // 获取当前索引对应的 tagData（如果文档中该表达式的出现次数多于 map 中记录的数量，则复制最后一条记录并重新生成 uid）
+          let tagData = tagDataList[tagDataIndex];
+          if (!tagData) {
+            log(`⚠️ Missing tagData for occurrence ${tagDataIndex + 1}, cloning previous.`);
+            tagData = JSON.parse(JSON.stringify(tagDataList[tagDataList.length - 1]));
+            tagData.uid = generateUid();
+            if (tagData.isLoopEnd) {
+              tagData.loopStartUid = generateUid(); // Fallback to avoid duplicate linkage
+            }
+          }
+
           // 3. 在当前光标位置插入 Content Control 标签
-          // 我们直接使用 ContentControlModule.insert，它内部会调用 InsertAndReplaceContentControls
           window.ContentControlModule.insert(tagData);
+          tagDataIndex++;
         } else {
           log(`🏁 No more occurrences of: ${expression}`);
           found = false;
         }
       }
     }
-
-    // 2. 恢复循环区域
-    await restoreLoopRegions();
 
     logSuccess('rawToVisual complete');
     log('========== RAW_TO_VISUAL END ==========');
@@ -397,7 +338,7 @@
 
       if (searchResult) {
         log(`📍 Found placeholder via SearchNext, replacing...`);
-        
+
         // 使用 InputText 将选中的文本替换为空
         await executeMethodPromise('InputText', ['', searchString]);
       }
@@ -448,6 +389,28 @@
       return expression;
     }
 
+    // 处理循环开始标记
+    if (tag.isLoopStart) {
+      let exprInner = `${tag.code}.subList(0, 10)`; // 默认
+      if (tag.text) {
+        const match = /【(.*?)】/.exec(tag.text);
+        if (match && match[1]) {
+          exprInner = match[1];
+        } else {
+          const raw = tag.text.replace('循环开始：', '').trim();
+          if (raw) {
+            exprInner = raw;
+            if (exprInner.indexOf('.subList') === -1) {
+              exprInner += '.subList(0, 10)';
+            }
+          }
+        }
+      }
+      const expression = `{{?${exprInner}}}`;
+      log('📝 Loop start expression:', expression);
+      return expression;
+    }
+
     let expression = '';
 
     switch (tag.type) {
@@ -478,6 +441,11 @@
         const bindIndicator = tag.paramValues.bindIndicator || '';
         expression = `{{?${bindIndicator} instanceof T(java.util.Map)}}content{{/}}`;
         log('📝 Condition type expression:', expression);
+        break;
+
+      case 'loop_end':
+        expression = '{{/}}';
+        log('📝 Loop end expression:', expression);
         break;
 
       default:
@@ -557,6 +525,10 @@
       log('🔎 Detected type: chart');
       return 'chart';
     }
+    if (/^\?.*\.subList\(/.test(expression)) {
+      log('🔎 Detected type: loop_start');
+      return 'loop_start';
+    }
     if (/^\?/.test(expression)) {
       log('🔎 Detected type: condition');
       return 'condition';
@@ -568,6 +540,10 @@
     if (/\.get\("/.test(expression)) {
       log('🔎 Detected type: text');
       return 'text';
+    }
+    if (expression === '/') {
+      log('🔎 Detected type: loop_end');
+      return 'loop_end';
     }
 
     log('🔎 Detected type: unknown');

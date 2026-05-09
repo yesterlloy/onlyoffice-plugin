@@ -120,13 +120,16 @@ const TemplateEditorPage = () => {
     // Bridge 就绪（iframe 已连接）
     const handleBridgeReady = () => {
       console.log('[TemplateEditor] Bridge ready received')
-      setEditorReady(true)
-      message.success('OnlyOffice 编辑器已就绪')
+      // message.success('OnlyOffice 编辑器已就绪')
     }
 
     // 插件就绪
     const handleEditorReady = () => {
       console.log('[TemplateEditor] Plugin ready received')
+      if(!editorReady) {
+        setEditorReady(true)
+        message.success('OnlyOffice 插件已就绪')
+      }
     }
 
     onlyOfficeBridge.on(MESSAGE_TYPES.TAG_CLICKED, handleTagClicked)
@@ -139,6 +142,7 @@ const TemplateEditorPage = () => {
       onlyOfficeBridge.off(MESSAGE_TYPES.LOOP_COMMENT_CLICKED, handleLoopCommentClicked)
       onlyOfficeBridge.off(MESSAGE_TYPES.BRIDGE_READY, handleBridgeReady)
       onlyOfficeBridge.off(MESSAGE_TYPES.EDITOR_READY, handleEditorReady)
+      setEditorReady(false) // 重置状态
     }
   }, [setCurrentEditingTag, setCurrentLoopConfig, setConfigPanelVisible, setEditorReady])
 
@@ -284,13 +288,14 @@ const TemplateEditorPage = () => {
         <Sider width={280} className="indicator-sider" theme="light">
           {loading ? (
             <div className="loading-container">
-              <Spin tip="加载中..." />
+              <Spin  />
             </div>
           ) : (
             <IndicatorPanel
               categories={categories}
               onIndicatorInsert={handleInsertIndicator}
               onIndicatorDrop={handleDropIndicator}
+              disabled={!editorReady}
             />
           )}
         </Sider>

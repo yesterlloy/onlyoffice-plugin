@@ -33,7 +33,9 @@
     chart: { color: '4F7CFF', title: '📈 ' },
     table: { color: '8B5CF6', title: '📋 ' },
     condition: { color: 'F59E0B', title: '⚙️ ' },
-    ai_generate: { color: '7C3AED', title: '🤖 ' }
+    ai_generate: { color: '7C3AED', title: '🤖 ' },
+    loop_start: { color: 'F59E0B', title: '🔄 ' },
+    loop_end: { color: 'F59E0B', title: '🔚 ' }
   };
 
   /**
@@ -62,8 +64,13 @@
       name: data.name,
       chartType: data.chartType || null,
       text: displayTitle,
-      paramValues: data.paramValues || {}
+      paramValues: data.paramValues || {},
+      // 透传额外属性（如循环相关字段）
+      ...data
     };
+
+    // 确保 text 不会被 data 覆盖成旧值
+    tagData.text = displayTitle;
 
     const tagJson = JSON.stringify(tagData);
     log('📦 Tag metadata:', tagJson);
@@ -121,7 +128,13 @@
    */
   function remove(data) {
     log('========== REMOVE START ==========');
-    log('🗑️ data.InternalId11111111:', data.InternalId);
+    
+    if (!data || !data.InternalId) {
+      logError('Remove failed: Invalid data or missing InternalId');
+      return;
+    }
+
+    log('🗑️ data.InternalId:', data.InternalId);
 
     if (!window.Asc || !window.Asc.plugin) {
       logError('OnlyOffice API not available!');
@@ -150,6 +163,12 @@
    */
   function updateTag(tag, paramValues) {
     log('========== UPDATE START 2222==========');
+    
+    if (!tag || !tag.InternalId) {
+      logError('Update tag failed: Invalid tag object or missing InternalId');
+      return;
+    }
+
     log('⚙️ InternalId:', tag.InternalId);
     log('⚙️ New paramValues:', JSON.stringify(paramValues, null, 2));
 

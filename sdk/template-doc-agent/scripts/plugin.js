@@ -4,7 +4,7 @@
  * 职责：文档操作代理，无 UI，仅通过消息与产品前端通信
  */
 
-(function(window) {
+(function (window) {
   // 调试日志配置
   const LOG_PREFIX = '[Plugin]';
   const LOG_ENABLED = true;
@@ -140,7 +140,7 @@
   let broadcastChannel = null;
   try {
     broadcastChannel = new BroadcastChannel('onlyoffice-plugin-channel');
-    broadcastChannel.onmessage = function(event) {
+    broadcastChannel.onmessage = function (event) {
       log('📡 BroadcastChannel received:', event.data);
       processMessage(event.data, 'broadcast', event);
     };
@@ -150,7 +150,7 @@
   }
 
   // 方式2: postMessage（跨域场景，监听来自 parent 的消息）
-  window.addEventListener('message', function(event) {
+  window.addEventListener('message', function (event) {
     log('📬 postMessage received from:', event);
 
     // 忽略来自自身的消息
@@ -174,13 +174,13 @@
       }
       return;
     }
-    
+
   });
 
   log('📦 postMessage listener registered (cross-origin communication)');
 
   // 方式3: OnlyOffice SDK onExternalMessage - serviceSendMessage 会触发这个
-  window.Asc.plugin.onExternalMessage = function(msg) {
+  window.Asc.plugin.onExternalMessage = function (msg) {
     log('📨 ========== EXTERNAL MESSAGE (serviceSendMessage) ==========');
     log('📨 Source: serviceSendMessage');
     log('📨 Message:', JSON.stringify(msg, null, 2));
@@ -191,7 +191,7 @@
   };
 
   // 插件初始化
-  window.Asc.plugin.init = function() {
+  window.Asc.plugin.init = function () {
     log('🚀 Plugin initialized 22222');
     log('📦 Available modules:', {
       ContentControl: Object.keys(ContentControl),
@@ -215,13 +215,13 @@
         // });
 
         // 监听点击事件作为兜底
-        window.Asc.plugin.attachEditorEvent("onClick", function() {
+        window.Asc.plugin.attachEditorEvent("onClick", function () {
           log('🖱️ EditorEvent: onClick 6666');
-          
+
           window.Asc.plugin.executeMethod("GetCurrentContentControl", null, function (internalId) {
             console.log('current id', internalId)
-            
-            if(internalId) {
+
+            if (internalId) {
               // 处理 ContentControl 点击
               window.Asc.plugin.executeMethod('GetAllContentControls', null, function (data) {
                 console.log('GetAllContentControls data:', internalId, data)
@@ -240,22 +240,22 @@
         });
 
         // 监听批注点击/聚焦事件 - 循环区域配置入口
-        window.Asc.plugin.attachEditorEvent("onClickAnnotation", function(data) {
+        window.Asc.plugin.attachEditorEvent("onClickAnnotation", function (data) {
           log('🖱️ EditorEvent: onClickAnnotation', data);
           checkForLoopComment(data);
         });
 
-        window.Asc.plugin.attachEditorEvent("onFocusAnnotation", function(data) {
+        window.Asc.plugin.attachEditorEvent("onFocusAnnotation", function (data) {
           log('🖱️ EditorEvent: onFocusAnnotation', data);
           checkForLoopComment(data);
         });
 
         // 监听光标位置变化 - 更加灵敏的检测方式
         // window.Asc.plugin.attachEditorEvent("onTargetPositionChanged", function() {
-          // 为了性能考虑，可以在这里做频率限制，但目前逻辑较轻，直接调用
-          // checkForLoopComment();
+        // 为了性能考虑，可以在这里做频率限制，但目前逻辑较轻，直接调用
+        // checkForLoopComment();
         // });
-        
+
         // log('✅ attachEditorEvent listeners initialized');
       }
     } catch (e) {
@@ -272,14 +272,18 @@
     if (isCheckingLoopComment) return;
     isCheckingLoopComment = true;
 
-    window.Asc.plugin.callCommand(function(extData) {
+    // Use Asc.scope to pass data to callCommand
+    window.Asc.scope.extData = eventData;
+
+    window.Asc.plugin.callCommand(function () {
+      var extData = Asc.scope.extData;
       var oDocument = Api.GetDocument();
       var oRange = oDocument.GetRangeBySelect();
       if (!oRange) return null;
 
       // 1. 尝试检测标准 ApiComment
       var aComments = [];
-      
+
       if (oRange.GetComments) {
         aComments = oRange.GetComments();
       } else if (oRange.GetComment) {
@@ -317,20 +321,20 @@
           }
         }
       }
-      
+
       // 2. 尝试检测 AnnotateParagraph 批注 (通过 extData)
       if (extData && extData.ranges && extData.ranges.length > 0) {
-          // 目前 AnnotateParagraph 的元数据通过全文匹配 QuoteText 逻辑处理（见上方）
+        // 目前 AnnotateParagraph 的元数据通过全文匹配 QuoteText 逻辑处理（见上方）
       }
 
       return null;
-    }, false, true, function(commentData) {
+    }, false, true, function (commentData) {
       isCheckingLoopComment = false;
       if (commentData) {
         log('✅ Detected loop comment:', commentData);
         reply('loopCommentClicked', commentData);
       }
-    }, eventData);
+    }, false, true);
   }
 
   /**
@@ -339,19 +343,19 @@
    */
   function onTargetControlClick(cc) {
     log('🖱️ Event: onTargetControlClick', cc);
-      if (cc && cc.Tag) {
-        try {
-          // 解析 JSON 标签数据
-          // const tagData = JSON.parse(cc.Tag);
-          logSuccess('Found indicator tag, sending to frontend:', cc);
+    if (cc && cc.Tag) {
+      try {
+        // 解析 JSON 标签数据
+        // const tagData = JSON.parse(cc.Tag);
+        logSuccess('Found indicator tag, sending to frontend:', cc);
 
-          // 发送消息给前端
-          reply('tagClicked', cc);
+        // 发送消息给前端
+        reply('tagClicked', cc);
 
-        } catch (e) {
-          log('⚠️ Non-indicator ContentControl or invalid JSON Tag');
-        }
+      } catch (e) {
+        log('⚠️ Non-indicator ContentControl or invalid JSON Tag');
       }
+    }
   }
 
   // ========== 消息处理函数 ==========
@@ -383,10 +387,15 @@
   }
 
   function handleRemoveIndicator(data, startTime) {
+    if (!data || !data.InternalId) {
+      logError('handleRemoveIndicator failed: Missing InternalId');
+      reply('removeError', { error: 'Missing InternalId' });
+      return;
+    }
     log('🗑️ Removing indicator (full):', data.InternalId);
 
     try {
-      ContentControl.remove(data) 
+      ContentControl.remove(data)
 
       const elapsed = Date.now() - startTime;
 
@@ -409,7 +418,14 @@
 
   function handleUpdateParams(data, startTime) {
     log('⚙️ Updating params...');
-    log('⚙️ id:', data.tag?.InternalId);
+
+    if (!data || !data.tag || !data.tag.InternalId) {
+      logError('handleUpdateParams failed: Missing tag or InternalId');
+      reply('updateError', { error: 'Missing tag information' });
+      return;
+    }
+
+    log('⚙️ id:', data.tag.InternalId);
     log('⚙️ paramValues:', JSON.stringify(data.paramValues, null, 2));
 
     try {
@@ -459,19 +475,19 @@
   }
 
   async function handleConvertToRaw(startTime) {
-    log('🔄 Converting to raw template (async)...');
+    log('🔄 Converting to raw template (async)...', Converter);
 
     try {
       // visualToRaw 现在返回 { rawContent, indicatorMap }
       const result = Converter.visualToRaw ? await Converter.visualToRaw() : { rawContent: '', indicatorMap: {} };
       const elapsed = Date.now() - startTime;
-      
+
       window.Asc.plugin.callCommand(() => {
         console.log('save=', Api)
         Api.Save()
       });
 
-      logSuccess('ConvertToRaw complete', { elapsed: elapsed + 'ms' });
+      logSuccess('ConvertToRaw complete', { elapsed: elapsed + 'ms', result });
       reply('convertDone', {
         content: result.rawContent,
         indicatorMap: result.indicatorMap,
@@ -531,7 +547,7 @@
         }
 
         const success = await Converter.replaceDroppedPlaceholder(data.dropUid, data.indicator);
-        
+
         if (!success) {
           log('⚠️ Placeholder not found, falling back to direct insertion at cursor');
           // 兜底方案：直接在当前光标位置插入
@@ -540,7 +556,7 @@
 
         const elapsed = Date.now() - startTime;
         logSuccess('Replace operation finished', { dropUid: data.dropUid, success, elapsed: elapsed + 'ms' });
-        
+
         reply('replaceDone', {
           dropUid: data.dropUid,
           success: true, // 即使是兜底插入也算成功
@@ -561,13 +577,17 @@
 
   async function handleSetLoopRegion(data, startTime) {
     log('🎯 handleSetLoopRegion START', data);
-    
+
     if (!data || !data.InternalId) {
       reply('setLoopRegionError', { message: 'Invalid tag data' });
       return;
     }
 
-    window.Asc.plugin.callCommand(function(tagInfo) {
+    // 1. 使用 callCommand 原子化更新起始标签的元数据和文本
+    window.Asc.scope.tagInfo = { InternalId: data.InternalId };
+
+    window.Asc.plugin.callCommand(function () {
+      var tagInfo = Asc.scope.tagInfo;
       var oDocument = Api.GetDocument();
       var oContentControls = oDocument.GetAllContentControls();
       var oTargetCC = null;
@@ -580,72 +600,70 @@
 
       if (oTargetCC) {
         var tagJson = oTargetCC.GetTag();
-        if (!tagJson) return false;
+        if (!tagJson) return null;
         var tagData = JSON.parse(tagJson);
-        
+
         if (!tagData.text.startsWith('循环开始：')) {
           tagData.text = '循环开始：' + tagData.text;
           tagData.isLoopStart = true;
           tagData.loopEndUid = tagData.uid + '_end';
-          
+
           oTargetCC.SetTag(JSON.stringify(tagData));
-          oTargetCC.Clear();
+          oTargetCC.SetAlias(tagData.text);
+          oTargetCC.RemoveAllElements();
           var oRun = Api.CreateRun();
           oRun.AddText(tagData.text);
           oTargetCC.AddElement(oRun, 0);
 
-          var oEndCC = Api.CreateInlineLvlSdt();
-          var endTagData = {
-             uid: tagData.loopEndUid,
-             type: 'loop_end',
-             text: '循环结束',
-             name: '循环结束',
-             isLoopEnd: true,
-             loopStartUid: tagData.uid
-          };
-          oEndCC.SetTag(JSON.stringify(endTagData));
-          oEndCC.SetLock("sdtContentUnlocked");
-          var oEndRun = Api.CreateRun();
-          oEndRun.AddText("循环结束");
-          oEndCC.AddElement(oEndRun, 0);
-          
-          var oPara = oTargetCC.GetParent();
-          if (oPara) {
-            var count = oPara.GetElementsCount();
-            var targetIndex = -1;
-            for (var j = 0; j < count; j++) {
-              var el = oPara.GetElement(j);
-              if (el && el.GetInternalId && el.GetInternalId() === tagInfo.InternalId) {
-                targetIndex = j;
-                break;
-              }
-            }
-            if (targetIndex !== -1) {
-              oPara.AddElement(oEndCC, targetIndex + 1);
-            } else {
-              oPara.AddElement(oEndCC);
-            }
-          }
+          return { internalId: tagInfo.InternalId, startTagData: tagData };
         }
       }
-      return true;
-    }, false, true, function() {
-      reply('setLoopRegionSuccess', {
-        timestamp: Date.now(),
-        elapsed: Date.now() - startTime
-      });
-    }, { InternalId: data.InternalId });
+      return null;
+    }, false, true, function (res) {
+      if (res && res.internalId) {
+        log('✅ Start tag updated, now positioning cursor for end tag...');
+
+        // 2. 将光标移动到起始标签之后 (isAfter = false 实际上是将光标放在控件末尾)
+        // 注意：MoveCursorToContentControl 的第二个参数：true 表示开始，false 表示结束
+        window.Asc.plugin.executeMethod('MoveCursorToContentControl', [res.internalId, false], function () {
+
+          // 3. 使用封装的 ContentControl 模块插入标准的“循环结束”标签
+          const endTagData = {
+            uid: res.startTagData.loopEndUid,
+            type: 'loop_end',
+            name: '循环结束',
+            isLoopEnd: true,
+            loopStartUid: res.startTagData.uid
+          };
+
+          ContentControl.insert(endTagData);
+
+          logSuccess('Loop region set with standard component');
+          reply('setLoopRegionSuccess', {
+            timestamp: Date.now(),
+            elapsed: Date.now() - startTime
+          });
+        });
+      } else {
+        logError('Failed to update start tag or tag already in loop');
+        reply('setLoopRegionError', { message: 'Failed to update start tag or already in loop' });
+      }
+    });
   }
 
   async function handleRemoveLoopEnd(data, startTime) {
     log('🎯 handleRemoveLoopEnd START', data);
-    
+
     if (!data || !data.InternalId) {
       reply('removeLoopEndError', { message: 'Invalid tag data' });
       return;
     }
 
-    window.Asc.plugin.callCommand(function(tagInfo) {
+    // Use Asc.scope to pass data to callCommand
+    window.Asc.scope.tagInfo = { InternalId: data.InternalId };
+
+    window.Asc.plugin.callCommand(function () {
+      var tagInfo = Asc.scope.tagInfo;
       var oDocument = Api.GetDocument();
       var oContentControls = oDocument.GetAllContentControls();
       var oTargetCC = null;
@@ -660,15 +678,15 @@
         var tagJson = oTargetCC.GetTag();
         if (!tagJson) return false;
         var tagData = JSON.parse(tagJson);
-        
+
         if (tagData.text.startsWith('循环开始：')) {
           tagData.text = tagData.text.substring(5); // 去除 "循环开始："
           tagData.isLoopStart = false;
           var endUid = tagData.loopEndUid;
           delete tagData.loopEndUid;
-          
+
           oTargetCC.SetTag(JSON.stringify(tagData));
-          oTargetCC.Clear();
+          oTargetCC.RemoveAllElements();
           var oRun = Api.CreateRun();
           oRun.AddText(tagData.text);
           oTargetCC.AddElement(oRun, 0);
@@ -678,6 +696,7 @@
             if (ccTag) {
               var ccData = JSON.parse(ccTag);
               if (ccData.uid === endUid || ccData.loopStartUid === tagData.uid) {
+                oContentControls[j].SetLock("unlocked");
                 oContentControls[j].Delete(false);
               }
             }
@@ -685,29 +704,32 @@
         }
       }
       return true;
-    }, false, true, function() {
+    }, false, true, function () {
       reply('removeLoopEndSuccess', {
         timestamp: Date.now(),
         elapsed: Date.now() - startTime
       });
-    }, { InternalId: data.InternalId });
+    });
   }
 
   function handleApplyLoopConfig(data, startTime) {
     log('📝 Applying loop config:', data);
-    
+
     var newText = "循环区域：【" + data.indicatorId + ".subList(" + (data.startIndex || 0) + ", " + (data.endIndex || 10) + ")】";
 
     // 1. 先尝试通过 AnnotateParagraph 更新 (如果是新版标注)
     // 获取当前位置的 IDs
-    window.Asc.plugin.executeMethod("GetSelectedContent", [{ type: "json" }], function(jsonRes) {
+    window.Asc.plugin.executeMethod("GetSelectedContent", [{ type: "json" }], function (jsonRes) {
       var selectionData = typeof jsonRes === 'string' ? JSON.parse(jsonRes) : jsonRes;
       var paragraphs = selectionData ? (selectionData.paragraphs || selectionData.elements) : null;
 
       if (paragraphs && paragraphs.length > 0) {
         var targetPara = paragraphs[0];
-        
-        window.Asc.plugin.callCommand(function(configData) {
+
+        window.Asc.scope.configData = { newText: newText };
+
+        window.Asc.plugin.callCommand(function () {
+          var configData = Asc.scope.configData;
           var oDocument = Api.GetDocument();
           var oRange = oDocument.GetRangeBySelect();
           if (!oRange) return null;
@@ -715,8 +737,8 @@
           // 检查当前是否有标准批注
           var aComments = oRange.GetComments ? oRange.GetComments() : [];
           if (aComments.length === 0 && oRange.GetComment) {
-              var sc = oRange.GetComment();
-              if (sc) aComments = [sc];
+            var sc = oRange.GetComment();
+            if (sc) aComments = [sc];
           }
 
           if (aComments.length > 0) {
@@ -728,7 +750,7 @@
             return { type: 'comment' };
           }
           return { type: 'none', start: oRange.GetStartPos() - oRange.GetParagraph(0).GetRange().GetStartPos(), length: oRange.GetText().length };
-        }, false, true, function(res) {
+        }, false, true, function (res) {
           if (res && res.type === 'none') {
             // 如果不是标准批注，尝试使用 AnnotateParagraph (更新或添加)
             window.Asc.plugin.executeMethod("AnnotateParagraph", [{
@@ -746,7 +768,7 @@
           }
           log('✅ Apply Loop Config SUCCESS');
           reply('applyLoopConfigSuccess', { status: 'ok', timestamp: Date.now() - startTime });
-        }, { newText: newText });
+        });
       }
     });
   }
@@ -833,7 +855,7 @@
     log,
     reply,
     // 测试方法
-    testBroadcast: function() {
+    testBroadcast: function () {
       if (broadcastChannel) {
         broadcastChannel.postMessage({ type: 'test', data: { from: 'plugin' } });
         log('📤 Test broadcast sent');

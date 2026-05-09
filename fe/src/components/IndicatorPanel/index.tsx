@@ -36,21 +36,27 @@ interface DraggableIndicatorProps {
   onInsert?: (indicator: IndicatorMetadata) => void
   onDragStart?: (uid: string, indicator: IndicatorMetadata) => void
   onDragEnd?: (uid: string, indicator: IndicatorMetadata) => void
+  disabled?: boolean
 }
 
 // 可拖拽的指标项
-const DraggableIndicator = ({ indicator, onInsert, onDragStart, onDragEnd }: DraggableIndicatorProps) => {
+const DraggableIndicator = ({ indicator, onInsert, onDragStart, onDragEnd, disabled }: DraggableIndicatorProps) => {
   const [isDragging, setIsDragging] = useState(false)
   const [dragUid, setDragUid] = useState('')
 
   const handleInsert = (e: React.MouseEvent) => {
     e.stopPropagation()  // 阻止事件冒泡
     e.preventDefault()
+    if (disabled) return
     console.log('[IndicatorPanel] Click insert:', indicator)
     onInsert?.(indicator)
   }
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    if (disabled) {
+      e.preventDefault()
+      return
+    }
     const uid = Date.now().toString()
     setDragUid(uid)
     setIsDragging(true)
@@ -71,8 +77,8 @@ const DraggableIndicator = ({ indicator, onInsert, onDragStart, onDragEnd }: Dra
 
   return (
     <div
-      className={`indicator-item ${isDragging ? 'dragging' : ''}`}
-      draggable={true}
+      className={`indicator-item ${isDragging ? 'dragging' : ''} ${disabled ? 'disabled' : ''}`}
+      draggable={!disabled}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
@@ -91,13 +97,14 @@ const DraggableIndicator = ({ indicator, onInsert, onDragStart, onDragEnd }: Dra
         {typeLabels[indicator.type]}
       </Tag>
       {onInsert && (
-        <Tooltip title="点击插入">
+        <Tooltip title={disabled ? "请等待编辑器加载" : "点击插入"}>
           <Button
             size="small"
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleInsert}
             className="indicator-item-insert"
+            disabled={disabled}
           />
         </Tooltip>
       )}
@@ -109,9 +116,10 @@ interface IndicatorPanelProps {
   categories: IndicatorCategory[]
   onIndicatorInsert?: (indicator: IndicatorMetadata) => void
   onIndicatorDrop?: (uid: string, indicator: IndicatorMetadata) => void
+  disabled?: boolean
 }
 
-const IndicatorPanel = ({ categories, onIndicatorInsert, onIndicatorDrop }: IndicatorPanelProps) => {
+const IndicatorPanel = ({ categories, onIndicatorInsert, onIndicatorDrop, disabled }: IndicatorPanelProps) => {
   const [searchText, setSearchText] = useState('')
   const [expandedKeys, setExpandedKeys] = useState<string[]>(categories.map((c) => `cat-${c.id}`))
 
@@ -148,6 +156,7 @@ const IndicatorPanel = ({ categories, onIndicatorInsert, onIndicatorDrop }: Indi
           indicator={ind} 
           onInsert={onIndicatorInsert} 
           onDragEnd={onIndicatorDrop} 
+          disabled={disabled}
         />
       ),
       isLeaf: true,

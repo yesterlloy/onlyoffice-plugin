@@ -90,6 +90,17 @@
   opacity: 0.5;
 }
 
+.indicator-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #fafafa !important;
+  border-left-color: transparent !important;
+}
+
+.indicator-item.disabled .indicator-drag-handle {
+  cursor: not-allowed;
+}
+
 /* 拖拽手柄 */
 .indicator-drag-handle {
   display: flex;

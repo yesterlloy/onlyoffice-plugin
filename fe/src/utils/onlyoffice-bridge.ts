@@ -45,7 +45,7 @@ class OnlyOfficeBridge {
     const checkFrame = (): void => {
       this.editorFrame = findFrame()
       if (this.editorFrame) {
-        console.log(`${LOG_PREFIX} ✅ Editor iframe connected`)
+        console.log(`${LOG_PREFIX} ✅ Editor iframe connected`, this.messageHandlers)
         this.initialized = true
         this.emit('bridgeReady', { connected: true })
       } else {

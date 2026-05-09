@@ -35,7 +35,7 @@ oss:
   type: local
   local:
     base-path: ./storage
-    api-base-url: http://192.168.1.30:8080/template-editor
+    api-base-url: http://192.168.1.30:8081/template-editor
   aliyun:
     endpoint: oss-cn-guangzhou.aliyuncs.com
     bucket-name: template-editor-dev
@@ -46,7 +46,7 @@ oss:
 # AI 模型配置
 ai:
   local:
-    base-url: http://49.232.215.235:11434/v1
+    base-url: http://localhost:11434/v1
     api-key:
     default-model: qwen3-coder-next:q8_0
     default-temperature: 0.3
@@ -59,7 +59,7 @@ ai:
 onlyoffice:
   document-server:
     url: http://192.168.1.30:8888
-  callback-base-url: http://192.168.1.30:8080/template-editor
+  callback-base-url: http://192.168.1.30:8081/template-editor
   jwt-secret: ${ONLYOFFICE_JWT_SECRET:hi4yFgssIvMvD5imXTGoqsGP1bSSkMg7}
   jwt-expire-hours: 24
 
