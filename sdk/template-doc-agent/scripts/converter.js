@@ -108,11 +108,10 @@
     const controls = await executeMethodPromise('GetAllContentControls', []);
 
     if (!controls || !Array.isArray(controls) || controls.length === 0) {
-      log('⚠️ No ContentControls found, fetching document content directly');
-      const content = await executeMethodPromise('GetDocumentContent', []);
+      log('⚠️ No ContentControls found, completing without fetching content');
       logSuccess('visualToRaw complete (no tags)');
       return {
-        rawContent: content || '',
+        rawContent: '',
         indicatorMap: {}
       };
     }
@@ -154,16 +153,11 @@
       }
     }
 
-    // 3. 获取替换后的全文内容
-    log('📡 Capturing raw content...');
-    const rawContent = await executeMethodPromise('GetDocumentContent', []);
-    log('📥 Raw content captured, length:', rawContent ? rawContent.length : 0);
-
     logSuccess('visualToRaw complete');
     log('========== VISUAL_TO_RAW END ==========');
 
     return {
-      rawContent: rawContent || '',
+      rawContent: '',
       indicatorMap: indicatorMap
     };
   }
@@ -179,80 +173,8 @@
 
     indicatorMap = indicatorMap || {};
 
-    const rawContent = await executeMethodPromise('GetDocumentContent', []);
-    log('rawContent==', rawContent)
-    if (rawContent) {
-      const expressions = findExpressions(rawContent);
-      log('🔍 Found', expressions.length, 'expressions from document content');
-
-      // 构建一个现有表达式的集合，用于判断是否需要新建 tagData
-      const existingExpressions = {};
-      for (const uid in indicatorMap) {
-        existingExpressions[indicatorMap[uid].expression] = true;
-      }
-
-      for (let i = 0; i < expressions.length; i++) {
-        const expr = expressions[i];
-        if (!existingExpressions[expr.full]) {
-          log('🆕 Building tag data for expression:', expr.full);
-          const newUid = generateUid();
-          const tagData = {
-            uid: newUid,
-            type: expr.type,
-            name: expr.expression,
-            code: '',
-            field: '',
-            paramValues: {}
-          };
-
-          if (expr.type === 'text' || expr.type === 'number' || expr.type === 'percent' || expr.type === 'date') {
-            const match = /([A-Z0-9]+)\.get\("([a-zA-Z0-9_]+)"\)/.exec(expr.expression);
-            if (match) {
-              tagData.code = match[1];
-              tagData.field = match[2];
-              tagData.name = tagData.code + '.' + tagData.field;
-            } else {
-              const parts = expr.expression.split('.');
-              if (parts.length >= 2) {
-                tagData.code = parts[0];
-                tagData.field = parts[1];
-              }
-            }
-          } else if (expr.type === 'chart') {
-            const match = /put\("([A-Z0-9]+)",\s*data\("([^"]+)"\)\)/.exec(expr.expression);
-            if (match) {
-              tagData.code = match[1];
-              tagData.paramValues.dataSource = match[2];
-              tagData.name = tagData.code + ' 图表';
-            }
-          } else if (expr.type === 'ai_generate') {
-            const match = /ai_generate\("([a-zA-Z0-9_]+)"/.exec(expr.expression);
-            if (match) {
-              tagData.field = match[1];
-              tagData.name = tagData.field + ' (AI)';
-            }
-          } else if (expr.type === 'loop_start') {
-            tagData.name = '循环开始';
-            tagData.isLoopStart = true;
-            const match = /^\?([A-Z0-9_]+)/.exec(expr.expression);
-            if (match) tagData.code = match[1];
-            tagData.text = '循环开始：【' + expr.expression.substring(1) + '】';
-          } else if (expr.type === 'loop_end') {
-            tagData.name = '循环结束';
-            tagData.isLoopEnd = true;
-          }
-
-          indicatorMap[newUid] = {
-            expression: expr.full,
-            tagData: tagData
-          };
-          existingExpressions[expr.full] = true;
-        }
-      }
-    }
-
     if (Object.keys(indicatorMap).length === 0) {
-      log('⚠️ indicatorMap is empty and no expressions found, skipping conversion');
+      log('⚠️ indicatorMap is empty, skipping conversion');
       return;
     }
 
@@ -272,18 +194,21 @@
       const tagDataList = exprToMappings[expression];
       log(`🔍 Searching for expression: ${expression} (Total expected occurrences: ${tagDataList.length})`);
 
+      // 每次查找新的表达式前，将光标移动到文档开头，因为 SearchNext 只会向下查找 (isForward=true)
+      await executeMethodPromise('MoveCursorToStart', []);
+
       let tagDataIndex = 0;
       let found = true;
 
       // 1. 使用 SearchNext 查找表达式
       while (found) {
-        let searchResult = window.Asc.plugin.executeMethod('SearchNext', [
+        let searchResult = await executeMethodPromise('SearchNext', [
           {
             "searchString": expression,
             "matchCase": true
           },
-          true // Wrap around?
-        ])
+          true // isForward = true (向下搜索)
+        ]);
 
         if (searchResult) {
           log(`📍 Found occurrence ${tagDataIndex + 1} of expression: ${expression}, replacing...`);
