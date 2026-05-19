@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 import { message } from 'antd'
-import { DocumentEditor } from '@onlyoffice/document-editor-react'
 import config, { getCallbackUrl } from '@/config'
 import { onlyOfficeBridge, MESSAGE_TYPES } from '@/utils/onlyoffice-bridge'
 import type { EditorConfigVO } from '@/types'
@@ -17,7 +16,7 @@ interface OnlyOfficeEditorProps {
 
 /**
  * OnlyOffice 编辑器组件
- * 使用 @onlyoffice/document-editor-react 官方组件
+ * 纯原生 JS 加载 DocsAPI 逻辑，不依赖 @onlyoffice/document-editor-react
  */
 const OnlyOfficeEditor = ({
   documentId,
@@ -40,7 +39,7 @@ const OnlyOfficeEditor = ({
         const keys = Object.keys(instances)
         if (keys.length > 0) {
           editorRef.current = instances[keys[0]]
-          window.docEditor = editorRef.current
+          ;(window as any).docEditor = editorRef.current
           console.log('[OnlyOfficeEditor] ✅ DocEditor instance saved:', editorRef.current)
         }
       }
@@ -98,7 +97,7 @@ const OnlyOfficeEditor = ({
     return () => {
       console.log('[OnlyOfficeEditor] 🗑️ Component unmounting, cleaning up bridge listeners')
       onlyOfficeBridge.off(MESSAGE_TYPES.EDITOR_READY, handleEditorReady)
-      window.docEditor = null
+      ;(window as any).docEditor = null
     }
   }, [])
 
@@ -169,16 +168,93 @@ const OnlyOfficeEditor = ({
       onError: onErrorEvent,
     },
   }
-  console.log('editorConfig=', editorConfig)
+
+  // 动态加载 OnlyOffice 脚本并初始化
+  useEffect(() => {
+    let script: HTMLScriptElement | null = null
+    let isDestroyed = false
+
+    const initEditor = () => {
+      if (isDestroyed) return
+      if (!(window as any).DocsAPI) {
+        onLoadComponentError(-3, 'DocsAPI 未定义')
+        return
+      }
+      try {
+        // 销毁已有实例以防冲突
+        if (editorRef.current) {
+          editorRef.current.destroyEditor()
+          editorRef.current = null
+        }
+
+        // 清空容器重新创建
+        const container = document.getElementById('onlyoffice-editor-iframe')
+        if (!container) return
+
+        console.log('[OnlyOfficeEditor] 🚀 Creating DocEditor with config:', editorConfig)
+        const docEditor = new (window as any).DocsAPI.DocEditor('onlyoffice-editor-iframe', editorConfig)
+        editorRef.current = docEditor
+        ;(window as any).docEditor = docEditor
+      } catch (err: any) {
+        console.error('[OnlyOfficeEditor] DocEditor init failed:', err)
+        onErrorEvent({ data: { error: err.message || '初始化编辑器失败' } })
+      }
+    }
+
+    const loadScriptAndInit = () => {
+      if ((window as any).DocsAPI) {
+        initEditor()
+        return
+      }
+
+      const scriptUrl = `${config.documentServerUrl}/web-apps/apps/api/documents/api.js`
+      // 检测是否已有 script 节点
+      const existingScript = document.querySelector(`script[src="${scriptUrl}"]`) as HTMLScriptElement
+      if (existingScript) {
+        const handleScriptLoad = () => {
+          initEditor()
+          existingScript.removeEventListener('load', handleScriptLoad)
+        }
+        existingScript.addEventListener('load', handleScriptLoad)
+        return
+      }
+
+      script = document.createElement('script')
+      script.src = scriptUrl
+      script.async = true
+      script.onload = () => {
+        initEditor()
+      }
+      script.onerror = () => {
+        onLoadComponentError(-2, 'DocumentServer 脚本加载失败')
+      }
+      document.head.appendChild(script)
+    }
+
+    loadScriptAndInit()
+
+    return () => {
+      isDestroyed = true
+      if (editorRef.current) {
+        try {
+          editorRef.current.destroyEditor()
+        } catch (e) {
+          console.warn('[OnlyOfficeEditor] Error destroying editor during unmount:', e)
+        }
+        editorRef.current = null
+        ;(window as any).docEditor = null
+      }
+      if (script && script.parentNode) {
+        script.parentNode.removeChild(script)
+      }
+    }
+  }, [documentId, documentUrl, documentKey, documentTitle, configVO])
 
   return (
     <div className="onlyoffice-editor-wrapper" id="onlyoffice-editor-wrapper" >
-      <DocumentEditor
-        id="onlyoffice-editor-container"
-        documentServerUrl={config.documentServerUrl}
-        config={editorConfig}
-        onDocumentReady={onDocumentReady}
-        onLoadComponentError={onLoadComponentError}
+      <div
+        id="onlyoffice-editor-iframe"
+        className="onlyoffice-editor-container"
       />
     </div>
   )

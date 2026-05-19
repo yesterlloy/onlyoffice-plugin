@@ -37,6 +37,20 @@ public class DocumentController {
         return Result.success(documentService.generateEditorConfig(request.getTemplateId(), userId, userName));
     }
 
+    @Operation(summary = "获取 OnlyOffice Token (POST)", description = "传入 payload，返回经 JWT 签名的 Token")
+    @PostMapping("/token")
+    public Result<String> getToken(@RequestBody Map<String, Object> payload) {
+        String token = tokenService.generateEditorToken(payload);
+        return Result.success(token);
+    }
+
+    @Operation(summary = "获取 OnlyOffice Token (GET)", description = "返回默认或基于 Query 参数签名的 Token")
+    @GetMapping("/token")
+    public Result<String> getDefaultToken(@RequestParam(required = false) Map<String, Object> params) {
+        String token = tokenService.generateEditorToken(params != null ? params : new HashMap<>());
+        return Result.success(token);
+    }
+
     @Operation(summary = "OnlyOffice 回调", description = "接收 OnlyOffice 文档保存回调")
     @PostMapping("/{templateId}/callback")
     public Map<String, Integer> documentCallback(
