@@ -47,8 +47,8 @@ oss:
 ai:
   local:
     base-url: http://localhost:11434/v1
-    api-key:
-    default-model: qwen3-coder-next:q8_0
+    api-key: ollama
+    default-model: qwen3.6:27b
     default-temperature: 0.3
     default-max-tokens: 1000
     timeout:

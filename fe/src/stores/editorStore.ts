@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { IndicatorCategory, IndicatorDetail, DocTagItem, EditorConfigVO, DocContentControl } from '@/types'
+import type { IndicatorCategory, IndicatorDetail, DocTagItem, EditorConfigVO, DocContentControl, Dataset } from '@/types'
 import { openDocument } from '@/api'
 import { onlyOfficeBridge, MESSAGE_TYPES } from '@/utils/onlyoffice-bridge'
 
@@ -7,6 +7,8 @@ interface EditorState {
   // 指标库数据
   categories: IndicatorCategory[]
   indicatorMap: Map<string, IndicatorDetail>
+  datasets: Dataset[]
+  selectedDataset: Dataset | null
   loading: boolean
 
   // 编辑器状态
@@ -31,6 +33,8 @@ interface EditorState {
   // Actions
   setCategories: (categories: IndicatorCategory[]) => void
   setIndicatorMap: (map: Map<string, IndicatorDetail>) => void
+  setDatasets: (datasets: Dataset[]) => void
+  setSelectedDataset: (dataset: Dataset | null) => void
   setLoading: (loading: boolean) => void
   setEditorReady: (ready: boolean) => void
   setConfigPanelVisible: (visible: boolean) => void
@@ -55,6 +59,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   // 初始状态
   categories: [],
   indicatorMap: new Map(),
+  datasets: [],
+  selectedDataset: null,
   loading: false,
   editorReady: false,
   backendConfig: null,
@@ -71,6 +77,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   // Actions
   setCategories: (categories) => set({ categories }),
   setIndicatorMap: (indicatorMap) => set({ indicatorMap }),
+  setDatasets: (datasets) => set({ datasets }),
+  setSelectedDataset: (dataset) => set({ selectedDataset: dataset }),
   setLoading: (loading) => set({ loading }),
   setEditorReady: (ready) => set({ editorReady: ready }),
   setConfigPanelVisible: (visible) => set({ configPanelVisible: visible }),

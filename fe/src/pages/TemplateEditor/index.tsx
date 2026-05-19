@@ -5,8 +5,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useEditorStore } from '@/stores'
 import { getIndicatorCategories, getIndicatorDetail } from '@/api'
 import { onlyOfficeBridge, MESSAGE_TYPES } from '@/utils/onlyoffice-bridge'
-import type { IndicatorDetail, IndicatorMetadata } from '@/types'
-import IndicatorPanel from '@/components/IndicatorPanel'
+import type { IndicatorDetail, IndicatorMetadata, Dataset } from '@/types'
+import DatasetPanel from '@/components/DatasetPanel'
 import OnlyOfficeEditor from '@/components/OnlyOfficeEditor'
 import ConfigPanel from '@/components/ConfigPanel'
 import Toolbar from '@/components/Toolbar'
@@ -35,6 +35,10 @@ const TemplateEditorPage = () => {
     setCategories,
     indicatorMap,
     setIndicatorMap,
+    datasets,
+    setDatasets,
+    selectedDataset,
+    setSelectedDataset,
     loading,
     setLoading,
     editorReady,
@@ -70,9 +74,14 @@ const TemplateEditorPage = () => {
     const loadIndicators = async () => {
       setLoading(true)
       try {
-        // 获取分类树
+        // 获取分类树和指标
         const cats = await getIndicatorCategories()
         setCategories(cats)
+        
+        // 获取数据集
+        const { getDatasets } = await import('@/api')
+        const dsList = await getDatasets()
+        setDatasets(dsList)
 
         // 构建指标映射表
         const map = new Map<string, IndicatorDetail>()
@@ -107,6 +116,16 @@ const TemplateEditorPage = () => {
       setCurrentLoopConfig(null) // 清除循环区域配置
       setCurrentEditingTag(data)
       setConfigPanelVisible(true)
+
+      // 同步左侧数据集选择
+      if (data.Tag?.type === 'dataset') {
+        const found = datasets.find(d => d.id === data.Tag.indicatorId)
+        if (found) {
+          setSelectedDataset(found)
+        }
+      } else {
+        setSelectedDataset(null)
+      }
     }
 
     // 循环区域评论点击
@@ -144,7 +163,31 @@ const TemplateEditorPage = () => {
       onlyOfficeBridge.off(MESSAGE_TYPES.EDITOR_READY, handleEditorReady)
       setEditorReady(false) // 重置状态
     }
-  }, [setCurrentEditingTag, setCurrentLoopConfig, setConfigPanelVisible, setEditorReady])
+  }, [setCurrentEditingTag, setCurrentLoopConfig, setConfigPanelVisible, setEditorReady, datasets, setSelectedDataset])
+
+  // 处理数据集插入
+  const handleInsertDataset = async (dataset: Dataset) => {
+    if (!editorReady) return;
+    try {
+      const tagItem = {
+        uid: '',
+        indicatorId: dataset.id,
+        code: dataset.code,
+        field: '',
+        name: dataset.name,
+        type: 'dataset' as any, // 确保类型对应
+        paramValues: {
+          datasourceCode: dataset.datasourceCode
+        },
+      };
+      await insertIndicatorToOnlyOffice(tagItem);
+      setSelectedDataset(dataset); // 选中该数据集
+      message.success(`已插入数据集「${dataset.name}」`);
+    } catch (error) {
+      console.error('Insert dataset failed:', error);
+      message.error('插入数据集失败');
+    }
+  }
 
   // 处理指标放置到文档内占位符（由 IndicatorPanel 触发）
   const handleDropIndicator = async (uid: string, indicator: IndicatorMetadata) => {
@@ -284,17 +327,22 @@ const TemplateEditorPage = () => {
       </div>
 
       <Layout>
-        {/* 左侧指标库面板 */}
-        <Sider width={280} className="indicator-sider" theme="light">
+        {/* 左侧数据集面板 */}
+        <Sider width={280} className="dataset-sider" theme="light">
           {loading ? (
             <div className="loading-container">
               <Spin  />
             </div>
           ) : (
-            <IndicatorPanel
-              categories={categories}
-              onIndicatorInsert={handleInsertIndicator}
-              onIndicatorDrop={handleDropIndicator}
+            <DatasetPanel
+              datasets={datasets}
+              selectedDatasetId={selectedDataset?.id}
+              onDatasetSelect={(ds) => {
+                setSelectedDataset(ds);
+                // 这里可能需要清除当前的 tag 选择
+                setCurrentEditingTag(null);
+              }}
+              onDatasetInsert={handleInsertDataset}
               disabled={!editorReady}
             />
           )}
@@ -322,7 +370,9 @@ const TemplateEditorPage = () => {
         </Content>
 
         {/* 右侧配置面板 */}
-        <ConfigPanel />
+        <Sider width={380} theme="light" className="config-sider" style={{ borderLeft: '1px solid #f0f0f0' }}>
+          <ConfigPanel />
+        </Sider>
       </Layout>
     </Layout>
   )

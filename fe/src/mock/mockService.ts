@@ -11,6 +11,7 @@ import type {
   AiPreviewRequest,
   AiPreviewResult,
   PageResult,
+  Dataset,
 } from '@/types'
 
 import {
@@ -21,6 +22,7 @@ import {
   mockDatasourceInvokeResults,
   mockAiResults,
   mockDynamicOptions,
+  mockDatasets,
 } from './data'
 
 // 模拟延迟（毫秒）
@@ -97,6 +99,13 @@ export function mockGetIndicatorsByType(type: string): Promise<IndicatorDetail[]
 /** 获取动态下拉选项 */
 export function mockGetDynamicOptions(source: string): Promise<string[]> {
   return mockResponse(mockDynamicOptions[source] || [])
+}
+
+// ============ 数据集相关 Mock API ============
+
+/** 获取数据集列表 */
+export function mockGetDatasets(): Promise<Dataset[]> {
+  return mockResponse(mockDatasets)
 }
 
 // ============ 模板相关 Mock API ============
@@ -324,4 +333,7 @@ export const mockApi = {
   approveAiReview: mockApproveAiReview,
   rejectAiReview: mockRejectAiReview,
   editAiReview: mockEditAiReview,
+  
+  // 数据集
+  getDatasets: mockGetDatasets,
 }

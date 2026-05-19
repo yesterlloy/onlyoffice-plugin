@@ -11,6 +11,7 @@ import type {
   PageResult,
   OpenDocumentRequest,
   EditorConfigVO,
+  Dataset,
 } from '@/types'
 
 // ============ 真实 API 实现（非 Mock 模式） ============
@@ -43,6 +44,7 @@ const realApi = {
   getDatasourceDetail: (datasourceId: string) => request.get<Datasource>(`/datasources/${datasourceId}`),
   invokeDatasource: (datasourceId: string, params?: Record<string, any>) =>
     request.post<Record<string, any>>(`/datasources/${datasourceId}/invoke`, params),
+  getDatasets: () => request.get<Dataset[]>('/datasets'),
 
   // AI
   aiPreview: (data: AiPreviewRequest) => request.post<AiPreviewResult>('/ai/preview', data),
@@ -95,6 +97,13 @@ export function getDynamicOptions(source: string) {
   return useMock
     ? mockApi.getDynamicOptions(source)
     : request.get<string[]>(`/indicators/params/options?source=${source}`)
+}
+
+// ============ 数据集相关 API ============
+
+/** 获取数据集列表 */
+export function getDatasets() {
+  return api.getDatasets()
 }
 
 // ============ 模板相关 API ============

@@ -3,7 +3,7 @@
  * 用于前端功能联调，无需启动后端
  */
 
-import type { IndicatorCategory, IndicatorDetail, IndicatorParam, Datasource, TemplateFile } from '@/types'
+import type { IndicatorCategory, IndicatorDetail, IndicatorParam, Datasource, TemplateFile, Dataset } from '@/types'
 
 // ============ 指标分类数据 ============
 
@@ -674,3 +674,81 @@ export const mockDynamicOptions: Record<string, string[]> = {
   'area_list': ['全市', 'A区', 'B区', 'C区', 'D区'],
   'period_list': ['第一季度', '第二季度', '第三季度', '第四季度'],
 }
+
+// ============ 数据集 Mock 数据 ============
+
+export const mockDatasets: Dataset[] = [
+  {
+    id: 'DS001',
+    code: 'JK4816',
+    name: '基础诉求数据集',
+    datasourceCode: 'JK1958333647587164160',
+    indicators: [
+      {
+        id: 101,
+        categoryId: 1,
+        indicatorId: 'year',
+        code: 'JK4816',
+        field: 'year',
+        name: '年份',
+        type: 'text',
+        previewValue: '2024',
+        sortOrder: 1,
+      },
+      {
+        id: 104,
+        categoryId: 1,
+        indicatorId: 'work_count',
+        code: 'JK4816',
+        field: 'work_count',
+        name: '受理总量',
+        type: 'number',
+        unit: '宗',
+        previewValue: '12580',
+        sortOrder: 4,
+      },
+      {
+        id: 106,
+        categoryId: 1,
+        indicatorId: 'complete_rate',
+        code: 'JK4816',
+        field: 'complete_rate',
+        name: '办结率',
+        type: 'percent',
+        unit: '%',
+        previewValue: '92.5',
+        sortOrder: 6,
+      }
+    ],
+  },
+  {
+    id: 'DS002',
+    code: 'JK3008',
+    name: '分类诉求数据集',
+    datasourceCode: 'JK1958333647587164161',
+    indicators: [
+      {
+        id: 201,
+        categoryId: 2,
+        indicatorId: 'top_types_chart',
+        code: 'JK3008',
+        field: 'top_types',
+        name: '诉求类型分布图',
+        type: 'chart',
+        chartType: 'pie',
+        sortOrder: 1,
+      },
+      {
+        id: 202,
+        categoryId: 2,
+        indicatorId: 'top_areas_chart',
+        code: 'JK3008',
+        field: 'top_areas',
+        name: '区域分布图',
+        type: 'chart',
+        chartType: 'bar',
+        sortOrder: 2,
+      }
+    ],
+  }
+]

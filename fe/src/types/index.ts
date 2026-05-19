@@ -1,5 +1,5 @@
 // 指标类型
-export type IndicatorType = 'text' | 'number' | 'percent' | 'date' | 'chart' | 'table' | 'condition' | 'ai_generate'
+export type IndicatorType = 'text' | 'number' | 'percent' | 'date' | 'chart' | 'table' | 'condition' | 'ai_generate' | 'dataset'
 
 // 图表类型
 export type ChartType = 'bar' | 'pie' | 'line'
@@ -7,13 +7,29 @@ export type ChartType = 'bar' | 'pie' | 'line'
 // 输入控件类型
 export type InputType = 'select' | 'text' | 'textarea' | 'number' | 'switch' | 'color' | 'multiselect'
 
-// 指标分类
 export interface IndicatorCategory {
   id: number
   name: string
   icon: string
   sortOrder: number
   indicators: IndicatorMetadata[]
+}
+
+// 数据集
+export interface Dataset {
+  id: string
+  code: string
+  name: string
+  datasourceCode: string
+  indicators: IndicatorMetadata[]
+}
+
+// 数据集列表项 (用于左侧列表)
+export interface DatasetItem {
+  id: string
+  code: string
+  name: string
+  datasourceCode: string
 }
 
 // 指标元数据

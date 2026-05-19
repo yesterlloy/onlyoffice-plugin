@@ -215,8 +215,8 @@
         // });
 
         // 监听点击事件作为兜底
-        window.Asc.plugin.attachEditorEvent("onClick", function () {
-          log('🖱️ EditorEvent: onClick 6666');
+        window.Asc.plugin.attachEditorEvent("onClick", function (e) {
+          log('🖱️ EditorEvent: onClick 6666', e);
 
           window.Asc.plugin.executeMethod("GetCurrentContentControl", null, function (internalId) {
             console.log('current id', internalId)
